@@ -29,6 +29,13 @@ const AppSidebar = () => {
       .then((res) => res.json())
       .then((data) => setDatasetList(data));
   }, []);
+  const [serverList, setServerList] = useState("");
+  useEffect(() => {
+    fetch("http://localhost:8000/servers")
+      .then((res) => res.json())
+      .then((data) => setServerList(data));
+  }, []);
+
   let navigation = [
     {
       component: CNavItem,
@@ -47,24 +54,33 @@ const AppSidebar = () => {
 
   if (datasetList) {
     datasetList.forEach(function (item) {
-      console.log(item)
       navigation.push(
         {
           component: CNavItem,
-          name: item,
-          to: '/dataset'
+          name: item.name,
+          to: '/datasets/' + item.id
         }
       )
-    }
-    )
-
+    })
   }
-  // {
-  //   component: CNavItem,
-  //   name: 'maps',
-  //   to: '/dataset',
-  // },
 
+  navigation.push(
+    {
+      component: CNavTitle,
+      name: 'SSH servers',
+    },
+  )
+  if (serverList) {
+    serverList.forEach(function (item) {
+      navigation.push(
+        {
+          component: CNavItem,
+          name: item.name,
+          to: '/servers/' + item.id
+        }
+      )
+    })
+  }
 
 
   const dispatch = useDispatch()

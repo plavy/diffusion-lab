@@ -12,7 +12,7 @@ const DatasetDashboard = () => {
 
   return (
     <>
-      <div>Ahoj: {message} /</div>
+      <div>Ahoj: {JSON.stringify(message)} /</div>
     </>
   )
 }
