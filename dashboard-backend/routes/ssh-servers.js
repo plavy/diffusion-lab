@@ -4,17 +4,9 @@ const router = express.Router();
 router.get('/', (req, res) => {
     res.json([
         {
-            name: "Maps",
+            name: "ZEMRIS",
             id: 1
         },
-        {
-            name: "Buildings",
-            id: 2
-        },
-        {
-            name: "Lamps",
-            id: 3
-        }
     ]);
 });
 
