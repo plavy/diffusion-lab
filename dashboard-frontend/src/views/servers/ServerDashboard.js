@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import classNames from 'classnames'
 
-const DatasetDashboard = () => {
+const ServerDashboard = () => {
 
   const [message, setMessage] = useState("");
   useEffect(() => {
@@ -17,5 +17,5 @@ const DatasetDashboard = () => {
   )
 }
 
-export default DatasetDashboard
+export default ServerDashboard
 
