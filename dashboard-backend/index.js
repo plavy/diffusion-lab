@@ -32,20 +32,3 @@ app.listen(port, () => {
 });
 
 
-// conn.on('ready', () => {
-//   console.log('Client :: ready'); 
-  
-//   // Execute a command on the server
-//   conn.exec('uptime', (err, stream) => {
-//     if (err) throw err;
-    
-//     stream.on('close', (code, signal) => {
-//       console.log(`Stream :: close :: code: ${code}, signal: ${signal}`);
-//       conn.end(); // Close the connection
-//     }).on('data', (data) => {
-//       console.log(`STDOUT: ${data}`);
-//     }).stderr.on('data', (data) => {
-//       console.log(`STDERR: ${data}`);
-//     });
-//   });
-// }).connect(sshConfig);
