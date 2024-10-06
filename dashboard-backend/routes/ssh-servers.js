@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-const { Client } = require('ssh2');
+const SSH2Promise = require('ssh2-promise');
+const { Client } = require('node-scp')
 
 const sshConfig = {
     host: 'napoleon.plavy.me',
@@ -19,28 +20,20 @@ router.get('/', (req, res) => {
     ]);
 });
 
-router.get('/:id', (req, res) => {
-    const conn = new Client();
-    let sshResult = "";
-    conn.on('ready', () => {
-        console.log('Client :: ready');
+router.get('/:id', async (req, res) => {
+    try {
+        const scp = await Client(sshConfig);
+        await scp.uploadFile('scripts/echo.sh', 'echo.sh');
+        scp.close();
 
-        // Execute a command on the server
-        conn.exec('ls', (err, stream) => {
-            if (err) throw err;
-
-            stream.on('close', (code, signal) => {
-                console.log(`Stream :: close :: code: ${code}, signal: ${signal}`);
-                conn.end();
-                res.json({ "detected-id": req.params.id, "sshResult": sshResult })
-            }).on('data', (data) => {
-                console.log(`STDOUT: ${data}`);
-                sshResult = data.toString();
-            }).stderr.on('data', (data) => {
-                console.log(`STDERR: ${data}`);
-            });
-        });
-    }).connect(sshConfig);
+        const ssh = new SSH2Promise(sshConfig);
+        const data = await ssh.exec("bash echo.sh");
+        ssh.close();
+        
+        res.json({ "detected-id": req.params.id, "sshResult": data.toString() })
+    } catch (e) {
+        console.log(e);
+    }
 })
 
 module.exports = router;
