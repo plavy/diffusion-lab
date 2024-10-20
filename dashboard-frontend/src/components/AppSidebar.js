@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux'
+import axios from "axios";
 
 import {
   CCloseButton,
@@ -19,21 +20,24 @@ import { AppSidebarNav } from './AppSidebarNav'
 import { logo } from 'src/assets/brand/logo'
 import { sygnet } from 'src/assets/brand/sygnet'
 
+import { getAuthHeader } from "../utils";
+
 // sidebar nav config
 import navigation from '../_nav'
 
 const AppSidebar = () => {
   const [datasetList, setDatasetList] = useState("");
   useEffect(() => {
-    fetch("http://localhost:8000/datasets")
-      .then((res) => res.json())
-      .then((data) => setDatasetList(data));
+    axios.get("http://localhost:8000/datasets", {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then((res) => setDatasetList(res.data));
   }, []);
   const [serverList, setServerList] = useState("");
   useEffect(() => {
-    fetch("http://localhost:8000/servers")
-      .then((res) => res.json())
-      .then((data) => setServerList(data));
+    axios.get("http://localhost:8000/servers")
+      .then((res) => setServerList(res.data));
   }, []);
 
   let navigation = [

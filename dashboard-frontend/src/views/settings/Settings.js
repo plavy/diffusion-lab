@@ -1,20 +1,13 @@
 import React, { useState } from "react";
 import { CForm, CFormInput, CButton } from '@coreui/react'
+import { getNextcloudSettings } from "../../utils";
 
 const Settings = () => {
 
-    function getSettings(name) {
-        try {
-            return JSON.parse(localStorage.getItem('nextcloud-settings'))[name];
-        } catch (e){
-            return "";
-        }
-    }
-
     const [formData, setFormData] = useState({
-        "nextcloud-url": getSettings("nextcloud-url"),
-        "nextcloud-username": getSettings("nextcloud-username"),
-        "nextcloud-password": getSettings("nextcloud-password"),
+        "nextcloud-domain": getNextcloudSettings("nextcloud-domain"),
+        "nextcloud-username": getNextcloudSettings("nextcloud-username"),
+        "nextcloud-password": getNextcloudSettings("nextcloud-password"),
     });
 
     const handleChange = (e) => {
@@ -35,16 +28,16 @@ const Settings = () => {
             <CForm onSubmit={handleSubmit}>
                 <CFormInput className="mb-3"
                     type="text"
-                    id="nextcloud-url"
-                    label="NextCloud URL"
-                    placeholder="https://nextcloud.example.com"
-                    value={formData["nextcloud-url"]}
+                    id="nextcloud-domain"
+                    label="NextCloud domain"
+                    placeholder="nextcloud.example.com"
+                    value={formData["nextcloud-domain"]}
                     onChange={handleChange}
                 ></CFormInput>
                 <CFormInput className="mb-3"
                     type="text"
                     id="nextcloud-username"
-                    label="NextCloud Username"
+                    label="NextCloud username"
                     placeholder="diffusion-lab"
                     value={formData["nextcloud-username"]}
                     onChange={handleChange}
@@ -52,7 +45,7 @@ const Settings = () => {
                 <CFormInput className="mb-3"
                     type="password"
                     id="nextcloud-password"
-                    label="NextCloud Password"
+                    label="NextCloud password"
                     placeholder="************"
                     value={formData["nextcloud-password"]}
                     onChange={handleChange}
