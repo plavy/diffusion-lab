@@ -50,7 +50,7 @@ const Settings = () => {
                     onChange={handleChange}
                 />
                 <CFormInput className="mb-3"
-                    type="text"
+                    type="password"
                     id="nextcloud-password"
                     label="NextCloud Password"
                     placeholder="************"
