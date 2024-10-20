@@ -4,49 +4,36 @@ const axios = require('axios');
 const xml2js = require('xml2js');
 
 router.get('/', (req, res) => {
-    res.json([
-        {
-            name: "Maps",
-            id: 1
-        },
-        {
-            name: "Buildings",
-            id: 2
-        },
-        {
-            name: "Lamps",
-            id: 3
-        }
-    ]);
-});
 
-router.get('/cloud', (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        res.setHeader('WWW-Authenticate', 'Basic');
+        res.status(401);
+        res.send("Basic Authentaction with URL is required.");
+        return;
+    }
 
-    // Nextcloud credentials
-    const username = 'diffusion-lab';
-    const password = 'x4ykBPQc(v2Je#S7_u';
+    const auth = new Buffer.from(authHeader.split(' ')[1],
+        'base64').toString().split(':');
 
-    // The directory you want to list (relative to your Nextcloud root)
-    const directoryPath = 'diffusion-lab/datasets'; // Note trailing slash
+    const nextcloudUrl = 'https://' + auth[0];
+    const username = auth[1];
+    const password = auth[2];
 
-    // The Nextcloud base URL
-    const nextcloudUrl = 'https://nextcloud.napoleon.plavy.me' + '/remote.php/webdav/' + directoryPath;
-
-    // Set up the XML parser
     const parser = new xml2js.Parser();
 
     async function listDirectory() {
         try {
-            // Perform PROPFIND request to list directory contents
+            // PROPFIND request to list directory contents
             const response = await axios({
                 method: 'PROPFIND',
-                url: nextcloudUrl,
+                url: nextcloudUrl + '/remote.php/webdav/diffusion-lab/datasets/', // With trailing slash
                 auth: {
                     username: username,
                     password: password,
                 },
                 headers: {
-                    Depth: 1, // Depth 1 means we get the immediate children
+                    Depth: 1,
                 },
             });
 
@@ -58,17 +45,48 @@ router.get('/cloud', (req, res) => {
                 return item['d:href'][0]; // Extract file/directory path
             });
 
-            // Log the list of files and directories
-            console.log('Files and directories in the specified folder:');
-            files.forEach(file => console.log(file));
-            res.json(files);
+            let datasets = [];
+            for (filePath of files) {
+
+                async function getFileContent() {
+                    try {
+                        // Perform GET request with basic auth to read file content
+                        const response = await axios({
+                            method: 'get',
+                            url: nextcloudUrl + filePath + 'metadata.json',
+                            auth: {
+                                username: username,
+                                password: password,
+                            },
+                        });
+
+                        const metadata = response.data;
+                        console.log(metadata);
+                        datasets.push({
+                            id: metadata.id,
+                            name: metadata.name,
+                        });
+
+
+                    } catch (error) {
+                        console.error('Error retrieving file content:', error.message);
+                    }
+                }
+
+                // Call the function to get file content
+                await getFileContent();
+            }
+
+            console.log(datasets)
+            res.json(datasets);
 
         } catch (error) {
-            console.error('Error listing directory contents:', error);
+            console.error('Error listing directory contents:', error.message);
+            res.status(400);
+            res.send(error.message);
         }
     }
 
-    // Call the listDirectory function
     listDirectory();
 
 })
