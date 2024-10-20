@@ -1,15 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const axios = require('axios');
 const xml2js = require('xml2js');
 const getAuth = require('../utils').getAuth;
 const listDirectory = require('../utils').listDirectory;
 const getFileContent = require('../utils').getFileContent;
-const path = require('path');
 
 const datasetDir = 'diffusion-lab/datasets/';
-const webdavPath = '/remote.php/webdav/'
-const metadataFile = 'metadata.json'
+const webdavPath = '/remote.php/webdav/';
+const metadataFile = 'metadata.json';
 
 router.get('/', async (req, res) => {
 
@@ -23,9 +21,8 @@ router.get('/', async (req, res) => {
         const response = await listDirectory(auth.baseUrl + webdavPath + datasetDir, auth.username, auth.password);
         // Parse the XML response to a JS object
         const parsedData = await parser.parseStringPromise(response.data);
-        // Extract file and directory names from the response
         const files = parsedData['d:multistatus']['d:response'].map(item => {
-            return item['d:href'][0]; // Extract file/directory path
+            return item['d:href'][0];
         });
 
         let datasets = [];

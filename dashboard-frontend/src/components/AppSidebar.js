@@ -36,7 +36,11 @@ const AppSidebar = () => {
   }, []);
   const [serverList, setServerList] = useState("");
   useEffect(() => {
-    axios.get("http://localhost:8000/servers")
+    axios.get("http://localhost:8000/servers", {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    })
       .then((res) => setServerList(res.data));
   }, []);
 

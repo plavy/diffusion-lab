@@ -29,7 +29,7 @@ const Settings = () => {
                 <CFormInput className="mb-3"
                     type="text"
                     id="nextcloud-domain"
-                    label="NextCloud domain"
+                    label="Nextcloud domain"
                     placeholder="nextcloud.example.com"
                     value={formData["nextcloud-domain"]}
                     onChange={handleChange}
@@ -37,7 +37,7 @@ const Settings = () => {
                 <CFormInput className="mb-3"
                     type="text"
                     id="nextcloud-username"
-                    label="NextCloud username"
+                    label="Nextcloud username"
                     placeholder="diffusion-lab"
                     value={formData["nextcloud-username"]}
                     onChange={handleChange}
@@ -45,7 +45,7 @@ const Settings = () => {
                 <CFormInput className="mb-3"
                     type="password"
                     id="nextcloud-password"
-                    label="NextCloud password"
+                    label="Nextcloud password"
                     placeholder="************"
                     value={formData["nextcloud-password"]}
                     onChange={handleChange}

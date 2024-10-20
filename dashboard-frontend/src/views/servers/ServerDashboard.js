@@ -1,20 +1,29 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import classNames from 'classnames'
+import classNames from 'classnames';
+import axios from "axios";
+import { getAuthHeader } from "../../utils";
 
 const ServerDashboard = () => {
 
   const { id } = useParams();
-  const [message, setMessage] = useState("");
+  
+  const [metadata, setMetadata] = useState("");
   useEffect(() => {
-    fetch("http://localhost:8000/servers/" + id)
-      .then((res) => res.json())
-      .then((data) => setMessage(data));
-  }, []);
+    axios.get("http://localhost:8000/servers/" + id, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then((res) => setMetadata(res.data));
+  }, [id]);
 
   return (
     <>
-      <div>Ahoj: {JSON.stringify(message)} /</div>
+      <h1>{metadata.name}</h1>
+      <div>ID: {metadata.id}</div>
+      <div>Hostname: {metadata.hostname}</div>
+      <div>Port: {metadata.port}</div>
+      <div>Username: {metadata.username}</div>
     </>
   )
 }
