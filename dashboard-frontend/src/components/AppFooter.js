@@ -5,9 +5,6 @@ const AppFooter = () => {
   return (
     <CFooter className="px-4">
       <div>
-        <a href="https://coreui.io" target="_blank" rel="noopener noreferrer">
-          CoreUI
-        </a>
         <span className="ms-1">&copy; 2025 Tin Plavec</span>
       </div>
       <div className="ms-auto">

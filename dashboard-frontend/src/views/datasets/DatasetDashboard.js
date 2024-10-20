@@ -7,6 +7,7 @@ import { getAuthHeader } from "../../utils";
 const DatasetDashboard = () => {
   
   const { id } = useParams();
+  
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
     axios.get("http://localhost:8000/datasets/" + id, {
@@ -14,14 +15,14 @@ const DatasetDashboard = () => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     }).then((res) => setMetadata(res.data));
-  }, []);
+  }, [id]);
 
   return (
     <>
       <h1>{metadata.name}</h1>
       <div>ID: {metadata.id}</div>
       <div>Author: {metadata.author}</div>
-      <div>path id: {id}</div>
+      {/* <div>path id: {id}</div> */}
     </>
   )
 }
