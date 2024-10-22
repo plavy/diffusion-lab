@@ -22,7 +22,6 @@ const DatasetDashboard = () => {
       <h1>{metadata.name}</h1>
       <div>ID: {metadata.id}</div>
       <div>Author: {metadata.author}</div>
-      {/* <div>path id: {id}</div> */}
     </>
   )
 }
