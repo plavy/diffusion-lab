@@ -102,13 +102,13 @@ const AppHeader = () => {
               </CDropdownItem>
             </CDropdownMenu>
           </CDropdown>
-          <CDropdown variant="nav-item">
-            <CDropdownToggle placement="bottom-end" className="pe-0" caret={false}>
+          <CDropdown variant="nav-item" placement="bottom-end">
+            <CDropdownToggle className="pe-0" caret={false}>
               {(getNextcloudSettings("nextcloud-username") && getNextcloudSettings("nextcloud-domain")) ?
-                              (getNextcloudSettings("nextcloud-username") + '@' + getNextcloudSettings("nextcloud-domain")) : ""
+                (getNextcloudSettings("nextcloud-username") + '@' + getNextcloudSettings("nextcloud-domain")) : ""
               }
             </CDropdownToggle>
-            <CDropdownMenu className="pt-0" placement="bottom-end">
+            <CDropdownMenu className="pt-0">
               <CDropdownItem href="/logout">
                 <CIcon icon={cilAccountLogout} className="me-2" />
                 Log out
