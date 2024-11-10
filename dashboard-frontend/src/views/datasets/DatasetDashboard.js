@@ -44,6 +44,7 @@ const DatasetDashboard = () => {
 
   const [trainVisible, setTrainVisible] = useState(false);
   const [generateVisible, setGenerateVisible] = useState(false);
+  const [stopTrainVisible, setStopTrainVisible] = useState(false);
 
 
   return (
@@ -87,7 +88,7 @@ const DatasetDashboard = () => {
                     Parameters: Epochs=30, Learning rate 100
                     <br />
                     <CButton type="submit" color="primary">Logs</CButton>
-                    <CButton type="submit" color="primary" className="m-2">Stop training</CButton>
+                    <CButton type="submit" color="primary" className="m-2" onClick={() => setStopTrainVisible(true)}>Stop training</CButton>
                   </CAccordionBody>
                 </CAccordionItem>
                 <CAccordionItem>
@@ -172,7 +173,6 @@ const DatasetDashboard = () => {
           <CModalTitle id="TrainModal">Train</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          <p></p>
           <CForm>
 
             <CFormSelect
@@ -231,7 +231,6 @@ const DatasetDashboard = () => {
           <CModalTitle id="GenerateModal">Generate</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          <p></p>
           <CForm>
 
             <CFormSelect
@@ -256,6 +255,25 @@ const DatasetDashboard = () => {
           <CButton color="secondary" onClick={() => setGenerateVisible(false)}>Close</CButton>
           <CButton color="primary">Download</CButton>
           <CButton color="primary">Generate</CButton>
+        </CModalFooter>
+      </CModal>
+
+
+      <CModal
+        scrollable
+        visible={stopTrainVisible}
+        onClose={() => setStopTrainVisible(false)}
+        aria-labelledby="StopTrainModal"
+      >
+        <CModalHeader>
+          <CModalTitle id="StopTrainModal">Stop training</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <p>Are you sure you want to stop the training?</p>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setStopTrainVisible(false)}>Cancel</CButton>
+          <CButton color="primary">Stop training</CButton>
         </CModalFooter>
       </CModal>
 
