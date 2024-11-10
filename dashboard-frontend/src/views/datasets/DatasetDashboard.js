@@ -21,7 +21,11 @@ import {
   CFormSelect,
   CForm,
   CFormInput,
-  CBadge
+  CBadge,
+  CContainer,
+  CRow,
+  CCol,
+  CImage
 } from "@coreui/react";
 
 
@@ -44,35 +48,32 @@ const DatasetDashboard = () => {
 
   return (
     <div className="d-flex flex-column h-100">
-      <div className="row flex-grow-1">
+      <CRow className="flex-grow-1 gap-3">
 
-        <div className="col">
+        <CCol className="bg-body rounded-4 p-3">
 
-          <h1>{metadata.name}</h1>
-          <div>ID: {metadata.id}</div>
+          <h2>Dataset {metadata.name}</h2>
           <div>Author: {metadata.author}</div>
 
-          <CCardGroup>
-            <CCard>
-              <CCardImage src="/src/assets/images/angular.jpg" />
-            </CCard>
+          <CContainer className="overflow-auto mt-2" style={{ height: '500px' }}>
+            <CRow xs={{ cols: 2 }}>
+              <CCol><CImage fluid src="/src/assets/images/angular.jpg" /></CCol>
+              <CCol><CImage fluid src="/src/assets/images/react.jpg" /></CCol>
+              <CCol><CImage fluid src="/src/assets/images/vue.jpg" /></CCol>
+              <CCol><CImage fluid src="/src/assets/images/angular.jpg" /></CCol>
+              <CCol><CImage fluid src="/src/assets/images/react.jpg" /></CCol>
 
-            <CCard>
-              <CCardImage src="/src/assets/images/react.jpg" />
-            </CCard>
+            </CRow>
+            <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
+          </CContainer>
 
-            <CCard>
-              <CCardImage src="/src/assets/images/vue.jpg" />
-            </CCard>
-          </CCardGroup>
-
-          <CButton type="submit" color="primary" action="#">Add new image</CButton>
+          <CButton type="submit" color="primary" action="#" className="m-2">Add new image</CButton>
           <CButton type="submit" color="primary" action="#">Take a photo</CButton>
 
-        </div>
+        </CCol>
 
 
-        <div className="col-5 d-flex flex-column">
+        <CCol xs={5} className="d-flex flex-column bg-body rounded-4 p-3">
           <h2>Trained models</h2>
 
           <div style={{ flexGrow: 1 }}>
@@ -157,8 +158,8 @@ const DatasetDashboard = () => {
               <CButton color="primary" size='lg' onClick={() => setGenerateVisible(true)}>Generate image</CButton>
             </div>
           </div>
-        </div>
-      </div>
+        </CCol>
+      </CRow>
 
       <CModal
         scrollable
