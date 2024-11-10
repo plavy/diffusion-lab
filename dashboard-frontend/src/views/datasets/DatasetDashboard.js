@@ -39,6 +39,7 @@ const DatasetDashboard = () => {
   }, [id]);
 
   const [trainVisible, setTrainVisible] = useState(false);
+  const [generateVisible, setGenerateVisible] = useState(false);
 
 
   return (
@@ -153,7 +154,7 @@ const DatasetDashboard = () => {
               <CButton color="primary" size='lg' onClick={() => setTrainVisible(true)}>Train new model</CButton>
             </div>
             <div className="col d-grid">
-              <CButton type="submit" color="primary" size='lg' action="#">Generate image</CButton>
+              <CButton color="primary" size='lg' onClick={() => setGenerateVisible(true)}>Generate image</CButton>
             </div>
           </div>
         </div>
@@ -173,7 +174,7 @@ const DatasetDashboard = () => {
           <p></p>
           <CForm>
 
-            <CFormSelect className="mt-2"
+            <CFormSelect
               id="preprocessing"
               floatingLabel="Preprocessing"
               options={[
@@ -214,6 +215,46 @@ const DatasetDashboard = () => {
         <CModalFooter>
           <CButton color="secondary" onClick={() => setTrainVisible(false)}>Cancel</CButton>
           <CButton color="primary">Start training</CButton>
+        </CModalFooter>
+      </CModal>
+
+
+      <CModal
+        scrollable
+        visible={generateVisible}
+        onClose={() => setGenerateVisible(false)}
+        aria-labelledby="GenerateModal"
+        size="lg"
+      >
+        <CModalHeader>
+          <CModalTitle id="GenerateModal">Generate</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <p></p>
+          <CForm>
+
+            <CFormSelect
+              id="trained-model"
+              floatingLabel="Trained model"
+              options={[
+                { label: 'Latent_diffusion_2024-11-10', value: '1' },
+                { label: 'Two', value: '2' },
+                { label: 'Three', value: '3' }
+              ]}
+            />
+            <CFormInput className="mt-2"
+              id="number"
+              type="text"
+              floatingLabel="Number of images"
+              value="4"
+            />
+
+          </CForm>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setGenerateVisible(false)}>Close</CButton>
+          <CButton color="primary">Download</CButton>
+          <CButton color="primary">Generate</CButton>
         </CModalFooter>
       </CModal>
 
