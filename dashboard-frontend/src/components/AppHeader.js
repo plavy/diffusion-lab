@@ -16,17 +16,17 @@ import {
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
-  cilBell,
+  cilAccountLogout,
   cilContrast,
-  cilEnvelopeOpen,
-  cilList,
   cilMenu,
   cilMoon,
   cilSun,
+  cilUser,
+  cilSettings
 } from '@coreui/icons'
 
 import { AppBreadcrumb } from './index'
-import { AppHeaderDropdown } from './header/index'
+import { getNextcloudSettings } from '../utils'
 
 const AppHeader = () => {
   const headerRef = useRef()
@@ -61,27 +61,7 @@ const AppHeader = () => {
             <CNavLink to="/settings" as={NavLink}>Settings</CNavLink>
           </CNavItem>
         </CHeaderNav>
-        <CHeaderNav className="ms-auto">
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilBell} size="lg" />
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilList} size="lg" />
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink href="#">
-              <CIcon icon={cilEnvelopeOpen} size="lg" />
-            </CNavLink>
-          </CNavItem>
-        </CHeaderNav>
         <CHeaderNav>
-          <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li>
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle caret={false}>
               {colorMode === 'dark' ? (
@@ -122,10 +102,27 @@ const AppHeader = () => {
               </CDropdownItem>
             </CDropdownMenu>
           </CDropdown>
-          <li className="nav-item py-1">
-            <div className="vr h-100 mx-2 text-body text-opacity-75"></div>
-          </li>
-          <AppHeaderDropdown />
+          <CDropdown variant="nav-item">
+            <CDropdownToggle placement="bottom-end" className="pe-0" caret={false}>
+              {(getNextcloudSettings("nextcloud-username") && getNextcloudSettings("nextcloud-domain")) ?
+                              (getNextcloudSettings("nextcloud-username") + '@' + getNextcloudSettings("nextcloud-domain")) : ""
+              }
+            </CDropdownToggle>
+            <CDropdownMenu className="pt-0" placement="bottom-end">
+              <CDropdownItem href="/logout">
+                <CIcon icon={cilAccountLogout} className="me-2" />
+                Log out
+              </CDropdownItem>
+              <CDropdownItem href="#">
+                <CIcon icon={cilUser} className="me-2" />
+                Profile
+              </CDropdownItem>
+              <CDropdownItem href="#">
+                <CIcon icon={cilSettings} className="me-2" />
+                Settings
+              </CDropdownItem>
+            </CDropdownMenu>
+          </CDropdown>
         </CHeaderNav>
       </CContainer>
       <CContainer className="px-4" fluid>
