@@ -21,9 +21,9 @@ router.get('/', async (req, res) => {
         const response = await listDirectory(auth.baseUrl + webdavPath + datasetDir, auth.username, auth.password);
         // Parse the XML response to a JS object
         const parsedData = await parser.parseStringPromise(response.data);
-        const files = parsedData['d:multistatus']['d:response'].map(item => {
-            return item['d:href'][0];
-        });
+        const files = parsedData['d:multistatus']['d:response']
+        .map(item => item['d:href'][0])
+        .filter(item => item != webdavPath + datasetDir);
 
         let datasets = [];
         for (const datasetPath of files) {
