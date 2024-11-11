@@ -25,7 +25,8 @@ import {
   CContainer,
   CRow,
   CCol,
-  CImage
+  CImage,
+  CSpinner
 } from "@coreui/react";
 
 
@@ -33,19 +34,29 @@ const DatasetDashboard = () => {
 
   const { id } = useParams();
 
+  const [siteReady, setSiteReady] = useState(false);
+  useEffect(() => {
+    setSiteReady(false)
+  }, [id])
+
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
     axios.get("http://localhost:8000/datasets/" + id, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then((res) => setMetadata(res.data));
+    }).then((res) => { setMetadata(res.data); setSiteReady(true) });
   }, [id]);
-
+  
   const [trainVisible, setTrainVisible] = useState(false);
   const [generateVisible, setGenerateVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
 
+  if (!siteReady) {
+    return (<div className="pt-3 text-center">
+      <CSpinner color="primary" variant="grow" />
+    </div>)
+  }
 
   return (
     <div className="d-flex flex-column h-100">

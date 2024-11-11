@@ -11,13 +11,18 @@ const ServerDashboard = () => {
 
   const { id } = useParams();
 
+  const [siteReady, setSiteReady] = useState(false);
+  useEffect(() => {
+    setSiteReady(false)
+  }, [id])
+
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
     axios.get("http://localhost:8000/servers/" + id, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then((res) => setMetadata(res.data));
+    }).then((res) => { setMetadata(res.data); setSiteReady(true) });
   }, [id]);
 
   const [status, setStatus] = useState("");
@@ -51,6 +56,12 @@ const ServerDashboard = () => {
 
   const handleSubmit = (e) => {
   };
+
+  if (!siteReady) {
+    return (<div className="pt-3 text-center">
+      <CSpinner color="primary" variant="grow" />
+    </div>)
+  }
 
   return (
     <>
