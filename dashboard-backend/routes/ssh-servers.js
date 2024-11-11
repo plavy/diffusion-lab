@@ -7,11 +7,12 @@ const getFileContent = require('../utils').getFileContent;
 
 const SSH2Promise = require('ssh2-promise');
 const { Client } = require('node-scp');
-const { hostname } = require('os');
+const { toSSHConfig } = require('../utils');
 
 const serverDir = 'diffusion-lab/ssh-servers/';
 const webdavPath = '/remote.php/webdav/';
 const metadataFile = 'metadata1.json';
+const scriptsDir = 'diffusion-lab/scripts/'
 
 
 router.get('/', async (req, res) => {
@@ -88,17 +89,8 @@ router.get('/:id/status', async (req, res) => {
     const id = req.params.id;
     try {
         const response = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
-        const metadata = response.data;
-
-        const sshConfig = {
-            host: metadata.hostname,
-            port: metadata.port,
-            username: metadata.username,
-            privateKey: require('fs').readFileSync('/home/plavy/.ssh/id_rsa')
-        };
-
         try {
-            const ssh = new SSH2Promise(sshConfig);
+            const ssh = new SSH2Promise(toSSHConfig(response.data));
             await ssh.connect();
             ssh.close();
 
@@ -115,5 +107,49 @@ router.get('/:id/status', async (req, res) => {
         console.error('Error retrieving file content:', error.message);
     }
 });
+
+router.post('/:id/sync', async (req, res) => {
+
+    const auth = getAuth(req, res);
+    if (!auth)
+        return;
+
+    const id = req.params.id;
+    try {
+        const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
+        const sshConfig = toSSHConfig(response1.data);
+
+        const parser = new xml2js.Parser();
+        const response2 = await listDirectory(auth.baseUrl + webdavPath + scriptsDir, auth.username, auth.password);
+        // Parse the XML response to a JS object
+        const parsedData = await parser.parseStringPromise(response2.data);
+        const files = parsedData['d:multistatus']['d:response']
+            .map(item => item['d:href'][0])
+            .filter(item => item != webdavPath + scriptsDir);
+
+        const ssh = new SSH2Promise(sshConfig);
+        await ssh.exec(`mkdir -p ${scriptsDir}`);
+
+        for (const scriptPath of files) {
+            try {
+                const response = await getFileContent(auth.baseUrl + scriptPath, auth.username, auth.password);
+                const data = response.data;
+
+                const scriptName = scriptPath.split("/").pop();
+                const scp = await Client(sshConfig);
+                await scp.writeFile(`${scriptsDir}/${scriptName}`, data);
+                scp.close();
+            } catch (e) {
+                console.error(e);
+            }
+        }
+        res.json({ code: 0 })
+    } catch (e) {
+
+    }
+
+
+
+})
 
 module.exports = router;

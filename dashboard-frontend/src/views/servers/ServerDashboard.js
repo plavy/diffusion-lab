@@ -57,6 +57,14 @@ const ServerDashboard = () => {
   const handleSubmit = (e) => {
   };
 
+  const syncScripts = (e) => {
+    axios.post(`http://localhost:8000/servers/${id}/sync`, null, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    });
+};
+
   if (!siteReady) {
     return (<div className="pt-3 text-center">
       <CSpinner color="primary" variant="grow" />
@@ -103,7 +111,7 @@ const ServerDashboard = () => {
         </CButton>
       </CForm>
 
-      <CButton type="submit" color="primary" className="mt-2">
+      <CButton type="submit" color="primary" className="mt-2" onClick={syncScripts}>
         Prepare or update environment
       </CButton>
 

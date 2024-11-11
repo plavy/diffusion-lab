@@ -46,3 +46,13 @@ exports.listDirectory = async function listDirectory(url, username, password) {
     });
     return response;
 }
+
+exports.toSSHConfig = function toSSHConfig(metadata) {
+    return {
+        host: metadata.hostname,
+        port: metadata.port,
+        username: metadata.username,
+        privateKey: require('fs').readFileSync('/home/plavy/.ssh/id_rsa')
+    };
+
+}
