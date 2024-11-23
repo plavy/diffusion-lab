@@ -79,6 +79,7 @@ const DatasetDashboard = () => {
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
 
+          <CButton type="submit" color="primary" action="#" className="m-2">Add new dataset</CButton>
           <CButton type="submit" color="primary" action="#" className="m-2">Add new image</CButton>
           <CButton type="submit" color="primary" action="#">Take a photo</CButton>
 

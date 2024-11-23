@@ -11,7 +11,7 @@ const { toSSHConfig } = require('../utils');
 
 const serverDir = 'diffusion-lab/ssh-servers/';
 const webdavPath = '/remote.php/webdav/';
-const metadataFile = 'metadata1.json';
+const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/'
 
 
