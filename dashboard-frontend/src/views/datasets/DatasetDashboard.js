@@ -47,10 +47,18 @@ const DatasetDashboard = () => {
       }
     }).then((res) => { setMetadata(res.data); setSiteReady(true) });
   }, [id]);
-  
+
   const [trainVisible, setTrainVisible] = useState(false);
   const [generateVisible, setGenerateVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
+
+  const startTraining = async (e) => {
+    axios.post(`http://localhost:8000/servers/napoleon/train`, null, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then(res => {console.log(res)});
+  }
 
   if (!siteReady) {
     return (<div className="pt-3 text-center">
@@ -185,8 +193,7 @@ const DatasetDashboard = () => {
           <CModalTitle id="TrainModal">Train</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          <CForm>
-
+          <CForm id="trainConfig">
             <CFormSelect
               id="preprocessing"
               floatingLabel="Preprocessing"
@@ -227,7 +234,7 @@ const DatasetDashboard = () => {
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setTrainVisible(false)}>Cancel</CButton>
-          <CButton color="primary">Start training</CButton>
+          <CButton color="primary" type="submit" onClick={startTraining}>Start training</CButton>
         </CModalFooter>
       </CModal>
 

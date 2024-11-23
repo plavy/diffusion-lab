@@ -57,13 +57,20 @@ const ServerDashboard = () => {
   const handleSubmit = (e) => {
   };
 
-  const syncScripts = (e) => {
-    axios.post(`http://localhost:8000/servers/${id}/sync`, null, {
+  const [syncingVisible, setSyncingVisible] = useState(false);
+  const [syncingSuccessVisible, setSyncingSuccessVisible] = useState(false);
+
+  const syncScripts = async (e) => {
+    setSyncingSuccessVisible(false);
+    setSyncingVisible(true);
+    await axios.post(`http://localhost:8000/servers/${id}/sync`, null, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     });
-};
+    setSyncingVisible(false);
+    setSyncingSuccessVisible(true);
+  };
 
   if (!siteReady) {
     return (<div className="pt-3 text-center">
@@ -111,9 +118,13 @@ const ServerDashboard = () => {
         </CButton>
       </CForm>
 
-      <CButton type="submit" color="primary" className="mt-2" onClick={syncScripts}>
-        Prepare or update environment
-      </CButton>
+      <div className="mt-2 flex-row gap-1">
+        <CButton type="submit" color="primary" onClick={syncScripts}>
+          <CSpinner size="sm" className="me-1" hidden={!syncingVisible}/>
+          <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible}/>
+          Prepare or update environment
+        </CButton>
+      </div>
 
     </>
   )

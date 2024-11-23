@@ -6,7 +6,7 @@ const listDirectory = require('../utils').listDirectory;
 const getFileContent = require('../utils').getFileContent;
 
 const SSH2Promise = require('ssh2-promise');
-const { Client } = require('node-scp');
+const SCPClient = require('node-scp').Client;
 const { toSSHConfig } = require('../utils');
 
 const serverDir = 'diffusion-lab/ssh-servers/';
@@ -15,6 +15,7 @@ const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/'
 
 
+// List SSH servers
 router.get('/', async (req, res) => {
 
     const auth = getAuth(req, res);
@@ -30,7 +31,6 @@ router.get('/', async (req, res) => {
         const files = parsedData['d:multistatus']['d:response']
             .map(item => item['d:href'][0])
             .filter(item => item != webdavPath + serverDir);
-
 
         let servers = [];
         for (const serverPath of files) {
@@ -56,6 +56,7 @@ router.get('/', async (req, res) => {
 
 });
 
+// Get config of SSH server
 router.get('/:id', async (req, res) => {
 
     const auth = getAuth(req, res);
@@ -80,6 +81,7 @@ router.get('/:id', async (req, res) => {
 
 });
 
+// Get status of SSH server
 router.get('/:id/status', async (req, res) => {
 
     const auth = getAuth(req, res);
@@ -108,6 +110,7 @@ router.get('/:id/status', async (req, res) => {
     }
 });
 
+// Sync files from nextcloud to SSH server
 router.post('/:id/sync', async (req, res) => {
 
     const auth = getAuth(req, res);
@@ -129,6 +132,7 @@ router.post('/:id/sync', async (req, res) => {
 
         const ssh = new SSH2Promise(sshConfig);
         await ssh.exec(`mkdir -p ${scriptsDir}`);
+        ssh.close();
 
         for (const scriptPath of files) {
             try {
@@ -136,7 +140,7 @@ router.post('/:id/sync', async (req, res) => {
                 const data = response.data;
 
                 const scriptName = scriptPath.split("/").pop();
-                const scp = await Client(sshConfig);
+                const scp = await SCPClient(sshConfig);
                 await scp.writeFile(`${scriptsDir}/${scriptName}`, data);
                 scp.close();
             } catch (e) {
@@ -145,11 +149,30 @@ router.post('/:id/sync', async (req, res) => {
         }
         res.json({ code: 0 })
     } catch (e) {
-
+        console.error(e);
     }
 
-
-
 })
+
+// Start training on SSH server
+router.post('/:id/train', async (req, res) => {
+
+    const auth = getAuth(req, res);
+    if (!auth)
+        return;
+
+    const id = req.params.id;
+
+    try {
+        const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
+        const sshConfig = toSSHConfig(response1.data);
+        const ssh = new SSH2Promise(sshConfig);
+        let response2 = await ssh.exec(`cd ${scriptsDir}; tmux new-session -d -s session_name 'python3 train.py home'`);
+        ssh.close();
+        res.json(response2);
+    } catch (e) {
+        console.error(e);
+    }
+});
 
 module.exports = router;
