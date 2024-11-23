@@ -5,9 +5,6 @@ import axios from "axios";
 import { getAuthHeader } from "../../utils";
 
 import {
-  CCard,
-  CCardImage,
-  CCardGroup,
   CButton,
   CAccordion,
   CAccordionItem,
@@ -51,62 +48,77 @@ const DatasetDashboard = () => {
   const [trainVisible, setTrainVisible] = useState(false);
   const [generateVisible, setGenerateVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
+  const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
 
-  const [trainings, setTrainings] = useState([]);
   const [trainedModels, setTrainedModels] = useState([]);
 
-  const getTrainings = () => {
-    axios.get(`http://localhost:8000/servers/napoleon/train`, {
+  const getTrainedModels = () => {
+    axios.get(`http://localhost:8000/servers/napoleon/models/${id}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then(res => setTrainings(res.data))
+    }).then(res => setTrainedModels(res.data))
   }
   // useEffect(() => {
   //   const interval = setInterval(() => {
-  //     getTrainings();
+  //     getTrainedModels();
   //   }, 5000);
   //   return () => clearInterval(interval);
   // }, [])
   useEffect(() => {
-    getTrainings();
-  }, [id, trainVisible])
+    getTrainedModels();
+  }, [id, trainVisible, stopTrainVisible])
 
   const AccordionItems = () => {
     let accordionItems = []
-    for (let training of trainings) {
-      accordionItems.push(
-        <CAccordionItem key={training.name}>
-          <CAccordionHeader>{training.name}<CBadge className="m-1" color="secondary">30%</CBadge></CAccordionHeader>
-          <CAccordionBody>
-            Parameters: Epochs=30, Learning rate 100
-            <br />
-            <CButton type="submit" color="primary">Logs</CButton>
-            <CButton type="submit" color="primary" className="m-2" onClick={() => setStopTrainVisible(true)}>Stop training</CButton>
-          </CAccordionBody>
-        </CAccordionItem>)
-    }
-    for (let trainedModel of trainedModels) {
-      accordionItems.push(
-        <CAccordionItem>
-          <CAccordionHeader>{trainedModel}</CAccordionHeader>
-          <CAccordionBody>
-            Parameters: Epochs=30, Learning rate 100
-            <br />
-            <CButton type="submit" color="primary">Generate image</CButton>
-          </CAccordionBody>
-        </CAccordionItem>
-      )
+    for (let model of trainedModels) {
+      if (model.done) {
+        accordionItems.push(
+          <CAccordionItem>
+            <CAccordionHeader>{model.name}</CAccordionHeader>
+            <CAccordionBody>
+              Parameters: Epochs=30, Learning rate 100
+              <br />
+              <CButton type="submit" color="primary">Generate image</CButton>
+            </CAccordionBody>
+          </CAccordionItem>
+        )
+      } else {
+        accordionItems.push(
+          <CAccordionItem key={model.name}>
+            <CAccordionHeader>{model.name}<CBadge className="m-1" color="secondary">{Math.round(model.step / model.max_steps * 100)}%</CBadge></CAccordionHeader>
+            <CAccordionBody>
+              Parameters: Epochs=30, Learning rate 100
+              <br />
+              <CButton type="submit" color="primary">Logs</CButton>
+              <CButton type="submit" color="primary" className="m-2" onClick={() => {
+                setStopTrainSessionName(model.name);
+                setStopTrainVisible(true);
+              }}>Stop training</CButton>
+            </CAccordionBody>
+          </CAccordionItem>)
+      }
     }
     return accordionItems
   }
 
   const startTraining = async (e) => {
-    await axios.post(`http://localhost:8000/servers/napoleon/train`, null, {
+    const form = document.getElementById('trainConfig');
+    axios.post(`http://localhost:8000/servers/napoleon/train/${id}`, {
+      sessionName: document.getElementById('session-name').value
+    }, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then(res => { console.log(res); setTrainVisible(false) });
+    }).then(res => { setTrainVisible(false) });
+  }
+
+  const stopTraining = async (sessionName) => {
+    axios.delete(`http://localhost:8000/servers/napoleon/train/${sessionName}`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then(res => { setStopTrainVisible(false) });
   }
 
   if (!siteReady) {
@@ -272,11 +284,11 @@ const DatasetDashboard = () => {
           <CModalTitle id="StopTrainModal">Stop training</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          <p>Are you sure you want to stop the training?</p>
+          <p>Are you sure you want to stop training {stopTrainSessionName}?</p>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setStopTrainVisible(false)}>Cancel</CButton>
-          <CButton color="primary">Stop training</CButton>
+          <CButton color="primary" onClick={() => stopTraining(stopTrainSessionName)}>Stop training</CButton>
         </CModalFooter>
       </CModal>
 

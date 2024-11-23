@@ -13,6 +13,8 @@ const serverDir = 'diffusion-lab/ssh-servers/';
 const webdavPath = '/remote.php/webdav/';
 const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/'
+const datasetDir = 'diffusion-lab/datasets/';
+const trainedModelsDir = 'trained_models';
 
 
 // List SSH servers
@@ -154,54 +156,87 @@ router.post('/:id/sync', async (req, res) => {
 
 })
 
-// List training sessions
-router.get('/:id/train', async (req, res) => {
+// List trained models
+router.get('/:id/models/:dsId', async (req, res) => {
     const auth = getAuth(req, res);
     if (!auth)
         return;
 
     const id = req.params.id;
+    const datasetId = req.params.dsId;
 
     try {
         const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
         const sshConfig = toSSHConfig(response1.data);
         const ssh = new SSH2Promise(sshConfig);
-        let response2 = await ssh.exec(`tmux list-sessions`);
-        ssh.close(); // not executed if error
-        let sessionStrings = response2.split('\n').filter(i => i);
+
+        // let response2 = ssh list dirs
+
         sessions = []
-        for (s of sessionStrings) {
-            sessions.push({
-                name: s.split(' ')[0].slice(0, -1)
-            })
-        }
+        // for (const sessionName of response2) {
+        // }
+        const sessionName = 'model-timestamp'
+        const response3 = await ssh.exec(`cat ${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}/progress.json`);
+        ssh.close(); // not executed if error
+        sessions.push({
+            name: sessionName,
+            step: JSON.parse(response3).step,
+            max_steps: JSON.parse(response3).max_steps,
+            done: JSON.parse(response3).done
+        })
         res.json(sessions);
     } catch (e) {
-        if (e.includes('no server running')) {
-            res.json([]);
-        } else {
-            console.error(e);
-        }
+        console.error(e);
     }
 })
 
 // Start training on SSH server
-router.post('/:id/train', async (req, res) => {
+router.post('/:id/train/:dsId', async (req, res) => {
 
     const auth = getAuth(req, res);
     if (!auth)
         return;
 
     const id = req.params.id;
+    const datasetId = req.params.dsId;
+    const sessionName = req.body.sessionName;
 
     try {
         const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
         const sshConfig = toSSHConfig(response1.data);
         const ssh = new SSH2Promise(sshConfig);
-        let response2 = await ssh.exec(`cd ${scriptsDir}; tmux new-session -d -s session_name 'python3 train.py home'`);
+        const cwd = `${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}`
+        const response2 = await ssh.exec(`mkdir -p ${cwd}; cd ${cwd};
+            tmux new-session -d -s ${sessionName} 'python3 ~/${scriptsDir}/train.py home';`);
         ssh.close();
         res.json(response2);
     } catch (e) {
+        res.status(500);
+        res.json(e);
+        console.error(e);
+    }
+});
+
+// Stop training on SSH server
+router.delete('/:id/train/:sessionName', async (req, res) => {
+
+    const auth = getAuth(req, res);
+    if (!auth)
+        return;
+
+    const id = req.params.id;
+    const sessionName = req.params.sessionName;
+
+    try {
+        const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
+        const sshConfig = toSSHConfig(response1.data);
+        const ssh = new SSH2Promise(sshConfig);
+        const response2 = await ssh.exec(`tmux kill-session -t ${sessionName}`);
+        ssh.close();
+        res.json(response2);
+    } catch (e) {
+        res.status(500);
+        res.json(e);
         console.error(e);
     }
 });

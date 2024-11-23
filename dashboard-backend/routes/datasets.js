@@ -9,6 +9,7 @@ const datasetDir = 'diffusion-lab/datasets/';
 const webdavPath = '/remote.php/webdav/';
 const metadataFile = 'metadata.json';
 
+
 router.get('/', async (req, res) => {
 
     const auth = getAuth(req, res);
