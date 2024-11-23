@@ -1,5 +1,9 @@
 import { Buffer } from "buffer";
 
+export function getBackendURL() {
+    return import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+}
+
 export function getNextcloudSettings(name) {
     try {
         return JSON.parse(localStorage.getItem('nextcloud-settings'))[name];

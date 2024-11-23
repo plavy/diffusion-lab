@@ -20,15 +20,12 @@ import { AppSidebarNav } from './AppSidebarNav'
 import { logo } from 'src/assets/brand/logo'
 import { sygnet } from 'src/assets/brand/sygnet'
 
-import { getAuthHeader } from "../utils";
-
-// sidebar nav config
-import navigation from '../_nav'
+import { getAuthHeader, getBackendURL } from "../utils";
 
 const AppSidebar = () => {
   const [datasetList, setDatasetList] = useState("");
   useEffect(() => {
-    axios.get("http://localhost:8000/datasets", {
+    axios.get(`${getBackendURL()}/datasets`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -36,7 +33,7 @@ const AppSidebar = () => {
   }, []);
   const [serverList, setServerList] = useState("");
   useEffect(() => {
-    axios.get("http://localhost:8000/servers", {
+    axios.get(`${getBackendURL()}/servers`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { json, useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader } from "../../utils";
+import { getAuthHeader, getBackendURL } from "../../utils";
 
 import {
   CButton,
@@ -33,16 +33,17 @@ const DatasetDashboard = () => {
 
   const [siteReady, setSiteReady] = useState(false);
   useEffect(() => {
-    setSiteReady(false)
+    setSiteReady(false);
+    setTrainedModelsReady(false);
   }, [id])
 
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
-    axios.get("http://localhost:8000/datasets/" + id, {
+    axios.get(`${getBackendURL()}/datasets/${id}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then((res) => { setMetadata(res.data); setSiteReady(true) });
+    }).then((res) => { setMetadata(res.data); setSiteReady(true); });
   }, [id]);
 
   const [trainVisible, setTrainVisible] = useState(false);
@@ -51,18 +52,22 @@ const DatasetDashboard = () => {
   const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
 
   const [trainedModels, setTrainedModels] = useState([]);
+  const [trainedModelsReady, setTrainedModelsReady] = useState(false);
+
 
   const getTrainedModels = () => {
     axios.get(`http://localhost:8000/servers/napoleon/models/${id}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then(res => setTrainedModels(res.data))
+    })
+      .then(res => { setTrainedModels(res.data); setTrainedModelsReady(true); })
+      .catch((e) => { setTrainedModels([]); setTrainedModelsReady(true); })
   }
   // useEffect(() => {
   //   const interval = setInterval(() => {
   //     getTrainedModels();
-  //   }, 5000);
+  //   }, 2000);
   //   return () => clearInterval(interval);
   // }, [])
   useEffect(() => {
@@ -72,41 +77,58 @@ const DatasetDashboard = () => {
   const AccordionItems = () => {
     let accordionItems = []
     for (let model of trainedModels) {
-      if (model.done) {
+      const hyperparameters = Object.entries(model)
+        .filter(([key]) => key.startsWith('hyperparameter:'))
+        .map(([key, value]) => `${key.replace("hyperparameter:", "")} = ${value}`)
+        .join(", ");
+      if (model.trainingDone == false) {
         accordionItems.push(
-          <CAccordionItem>
-            <CAccordionHeader>{model.name}</CAccordionHeader>
+          <CAccordionItem key={model.sessionName}>
+            <CAccordionHeader>{model.sessionName}<CBadge className="m-1" color="secondary">{model.trainingProgress}%</CBadge></CAccordionHeader>
             <CAccordionBody>
-              Parameters: Epochs=30, Learning rate 100
+              Hyperparameters: {hyperparameters}
+              <br />
+              <CButton type="submit" color="primary">Logs</CButton>
+              <CButton type="submit" color="primary" className="m-2" onClick={() => {
+                setStopTrainSessionName(model.sessionName);
+                setStopTrainVisible(true);
+              }}>Stop training</CButton>
+            </CAccordionBody>
+          </CAccordionItem>)
+      } else {
+        accordionItems.push(
+          <CAccordionItem key={model.sessionName}>
+            <CAccordionHeader>{model.sessionName}</CAccordionHeader>
+            <CAccordionBody>
+              Hyperparameters: {hyperparameters}
               <br />
               <CButton type="submit" color="primary">Generate image</CButton>
             </CAccordionBody>
           </CAccordionItem>
         )
-      } else {
-        accordionItems.push(
-          <CAccordionItem key={model.name}>
-            <CAccordionHeader>{model.name}<CBadge className="m-1" color="secondary">{Math.round(model.step / model.max_steps * 100)}%</CBadge></CAccordionHeader>
-            <CAccordionBody>
-              Parameters: Epochs=30, Learning rate 100
-              <br />
-              <CButton type="submit" color="primary">Logs</CButton>
-              <CButton type="submit" color="primary" className="m-2" onClick={() => {
-                setStopTrainSessionName(model.name);
-                setStopTrainVisible(true);
-              }}>Stop training</CButton>
-            </CAccordionBody>
-          </CAccordionItem>)
       }
     }
     return accordionItems
   }
 
-  const startTraining = async (e) => {
+  const [trainFormData, setTrainFormData] = useState({
+    "preprocessing": "1",
+    "model": "1",
+    "hyperparameter:learningRate": "1e-10",
+    "hyperparameter:maxSteps": "100",
+    "sessionName": "model-timestamp"
+  });
+
+  const handleTrainChange = (e) => {
+    setTrainFormData({
+      ...trainFormData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleTrainSubmit = async (e) => {
     const form = document.getElementById('trainConfig');
-    axios.post(`http://localhost:8000/servers/napoleon/train/${id}`, {
-      sessionName: document.getElementById('session-name').value
-    }, {
+    axios.post(`http://localhost:8000/servers/napoleon/train/${id}`, trainFormData, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -162,7 +184,9 @@ const DatasetDashboard = () => {
 
             <div className="overflow-auto" style={{ height: '500px' }}>
               <CAccordion>
-                <AccordionItems />
+                {trainedModelsReady ? <AccordionItems /> : <div className="pt-3 text-center">
+                  <CSpinner color="primary" variant="grow" />
+                </div>}
               </CAccordion>
             </div>
           </div>
@@ -198,6 +222,7 @@ const DatasetDashboard = () => {
                 { label: 'Two', value: '2' },
                 { label: 'Three', value: '3' }
               ]}
+              onChange={handleTrainChange}
             />
             <CFormSelect className="mt-2"
               id="model"
@@ -206,31 +231,35 @@ const DatasetDashboard = () => {
                 { label: 'Pixel diffusion', value: '1' },
                 { label: 'Latent diffusion', value: '2' },
               ]}
+              onChange={handleTrainChange}
             />
             <CFormInput className="mt-2"
-              id="learning-rate"
+              id="hyperparameter:learningRate"
               type="text"
               floatingLabel="Learning rate"
-              value="1e-10"
+              value={trainFormData["hyperparameter:learningRate"]}
+              onChange={handleTrainChange}
             />
             <CFormInput className="mt-2"
-              id="max-steps"
+              id="hyperparameter:maxSteps"
               type="text"
               floatingLabel="Max steps"
-              value="10000"
+              value={trainFormData["hyperparameter:maxSteps"]}
+              onChange={handleTrainChange}
             />
             <CFormInput className="mt-2"
-              id="session-name"
+              id="sessionName"
               type="text"
               floatingLabel="Session name"
-              value="model-timestamp"
+              value={trainFormData["sessionName"]}
+              onChange={handleTrainChange}
             />
 
           </CForm>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setTrainVisible(false)}>Cancel</CButton>
-          <CButton color="primary" type="submit" onClick={startTraining}>Start training</CButton>
+          <CButton color="primary" type="submit" onClick={handleTrainSubmit}>Start training</CButton>
         </CModalFooter>
       </CModal>
 

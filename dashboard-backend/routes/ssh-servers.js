@@ -170,22 +170,19 @@ router.get('/:id/models/:dsId', async (req, res) => {
         const sshConfig = toSSHConfig(response1.data);
         const ssh = new SSH2Promise(sshConfig);
 
-        // let response2 = ssh list dirs
-
+        const sftp = ssh.sftp();
+        const response2 = await sftp.readdir(`${datasetDir}/${datasetId}/${trainedModelsDir}`);
         sessions = []
-        // for (const sessionName of response2) {
-        // }
-        const sessionName = 'model-timestamp'
-        const response3 = await ssh.exec(`cat ${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}/progress.json`);
+        for (const directory of response2) {
+            const sessionName = directory.filename;
+            const response3 = await ssh.exec(`cat ${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}/${metadataFile}`);
+            sessions.push(JSON.parse(response3))
+        }
         ssh.close(); // not executed if error
-        sessions.push({
-            name: sessionName,
-            step: JSON.parse(response3).step,
-            max_steps: JSON.parse(response3).max_steps,
-            done: JSON.parse(response3).done
-        })
         res.json(sessions);
     } catch (e) {
+        res.status(500);
+        res.json(e);
         console.error(e);
     }
 })
@@ -202,13 +199,21 @@ router.post('/:id/train/:dsId', async (req, res) => {
     const sessionName = req.body.sessionName;
 
     try {
+        const cwd = `${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}`
+
         const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
         const sshConfig = toSSHConfig(response1.data);
+
         const ssh = new SSH2Promise(sshConfig);
-        const cwd = `${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}`
-        const response2 = await ssh.exec(`mkdir -p ${cwd}; cd ${cwd};
-            tmux new-session -d -s ${sessionName} 'python3 ~/${scriptsDir}/train.py home';`);
+        await ssh.exec(`mkdir -p ${cwd}`);
+
+        const scp = await SCPClient(sshConfig);
+        await scp.writeFile(`${cwd}/${metadataFile}`, JSON.stringify(req.body, null, 2));
+        scp.close();
+
+        const response2 = await ssh.exec(`cd ${cwd}; tmux new-session -d -s ${sessionName} 'python3 ~/${scriptsDir}/train.py home';`);
         ssh.close();
+
         res.json(response2);
     } catch (e) {
         res.status(500);
