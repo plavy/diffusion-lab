@@ -154,6 +154,37 @@ router.post('/:id/sync', async (req, res) => {
 
 })
 
+// List training sessions
+router.get('/:id/train', async (req, res) => {
+    const auth = getAuth(req, res);
+    if (!auth)
+        return;
+
+    const id = req.params.id;
+
+    try {
+        const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
+        const sshConfig = toSSHConfig(response1.data);
+        const ssh = new SSH2Promise(sshConfig);
+        let response2 = await ssh.exec(`tmux list-sessions`);
+        ssh.close(); // not executed if error
+        let sessionStrings = response2.split('\n').filter(i => i);
+        sessions = []
+        for (s of sessionStrings) {
+            sessions.push({
+                name: s.split(' ')[0].slice(0, -1)
+            })
+        }
+        res.json(sessions);
+    } catch (e) {
+        if (e.includes('no server running')) {
+            res.json([]);
+        } else {
+            console.error(e);
+        }
+    }
+})
+
 // Start training on SSH server
 router.post('/:id/train', async (req, res) => {
 

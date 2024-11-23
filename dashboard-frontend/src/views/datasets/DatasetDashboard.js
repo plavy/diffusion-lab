@@ -52,12 +52,61 @@ const DatasetDashboard = () => {
   const [generateVisible, setGenerateVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
 
-  const startTraining = async (e) => {
-    axios.post(`http://localhost:8000/servers/napoleon/train`, null, {
+  const [trainings, setTrainings] = useState([]);
+  const [trainedModels, setTrainedModels] = useState([]);
+
+  const getTrainings = () => {
+    axios.get(`http://localhost:8000/servers/napoleon/train`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then(res => {console.log(res)});
+    }).then(res => setTrainings(res.data))
+  }
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     getTrainings();
+  //   }, 5000);
+  //   return () => clearInterval(interval);
+  // }, [])
+  useEffect(() => {
+    getTrainings();
+  }, [id, trainVisible])
+
+  const AccordionItems = () => {
+    let accordionItems = []
+    for (let training of trainings) {
+      accordionItems.push(
+        <CAccordionItem key={training.name}>
+          <CAccordionHeader>{training.name}<CBadge className="m-1" color="secondary">30%</CBadge></CAccordionHeader>
+          <CAccordionBody>
+            Parameters: Epochs=30, Learning rate 100
+            <br />
+            <CButton type="submit" color="primary">Logs</CButton>
+            <CButton type="submit" color="primary" className="m-2" onClick={() => setStopTrainVisible(true)}>Stop training</CButton>
+          </CAccordionBody>
+        </CAccordionItem>)
+    }
+    for (let trainedModel of trainedModels) {
+      accordionItems.push(
+        <CAccordionItem>
+          <CAccordionHeader>{trainedModel}</CAccordionHeader>
+          <CAccordionBody>
+            Parameters: Epochs=30, Learning rate 100
+            <br />
+            <CButton type="submit" color="primary">Generate image</CButton>
+          </CAccordionBody>
+        </CAccordionItem>
+      )
+    }
+    return accordionItems
+  }
+
+  const startTraining = async (e) => {
+    await axios.post(`http://localhost:8000/servers/napoleon/train`, null, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then(res => { console.log(res); setTrainVisible(false) });
   }
 
   if (!siteReady) {
@@ -100,73 +149,8 @@ const DatasetDashboard = () => {
           <div style={{ flexGrow: 1 }}>
 
             <div className="overflow-auto" style={{ height: '500px' }}>
-
               <CAccordion>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion 2024-11-10-08-23-35<CBadge className="m-1" color="secondary">30%</CBadge></CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Logs</CButton>
-                    <CButton type="submit" color="primary" className="m-2" onClick={() => setStopTrainVisible(true)}>Stop training</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion <br />2024-11-10</CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Generate image</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion <br />2024-11-10</CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Generate image</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion <br />2024-11-10</CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Generate image</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion <br />2024-11-10</CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Generate image</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion <br />2024-11-10</CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Generate image</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion <br />2024-11-10</CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Generate image</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
-                <CAccordionItem>
-                  <CAccordionHeader>Latent diffusion <br />2024-11-10</CAccordionHeader>
-                  <CAccordionBody>
-                    Parameters: Epochs=30, Learning rate 100
-                    <br />
-                    <CButton type="submit" color="primary">Generate image</CButton>
-                  </CAccordionBody>
-                </CAccordionItem>
+                <AccordionItems />
               </CAccordion>
             </div>
           </div>
@@ -224,9 +208,9 @@ const DatasetDashboard = () => {
               value="10000"
             />
             <CFormInput className="mt-2"
-              id="filename"
+              id="session-name"
               type="text"
-              floatingLabel="Filename"
+              floatingLabel="Session name"
               value="model-timestamp"
             />
 
