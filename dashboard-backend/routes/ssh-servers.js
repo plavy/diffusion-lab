@@ -215,7 +215,7 @@ router.post('/:id/train/:dsId', async (req, res) => {
         await scp.writeFile(`${cwd}/${metadataFile}`, JSON.stringify(req.body, null, 2));
         scp.close();
 
-        const response2 = await ssh.exec(`cd ${cwd}; tmux new-session -d -s ${sessionName} 'python3 ~/${scriptsDir}/train.py home';`);
+        const response2 = await ssh.exec(`cd ${cwd}; tmux new-session -d -s ${sessionName} 'source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/diffusion.py maps';`);
         ssh.close();
 
         res.json(response2);

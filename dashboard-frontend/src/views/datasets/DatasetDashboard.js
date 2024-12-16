@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { json, useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL } from "../../utils";
+import { getAuthHeader, getBackendURL, getLocal } from "../../utils";
 
 import {
   CButton,
@@ -32,10 +32,6 @@ const DatasetDashboard = () => {
   const { id } = useParams();
 
   const [siteReady, setSiteReady] = useState(false);
-  useEffect(() => {
-    setSiteReady(false);
-    setTrainedModelsReady(false);
-  }, [id])
 
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
@@ -56,6 +52,16 @@ const DatasetDashboard = () => {
 
   const [imageSrcList, setImageSrcList] = useState([]);
 
+  const [selectedServer, setSelectedServer] = useState(getLocal('servers')[0].id); // hacky
+
+  useEffect(() => {
+    setSiteReady(false);
+    setTrainedModelsReady(false);
+  }, [id])
+  useEffect(() => {
+    setTrainedModelsReady(false);
+  }, [selectedServer])
+
   useEffect(() => {
     setImageSrcList([]);
     axios.get(`${getBackendURL()}/datasets/${id}/images/train`, {
@@ -63,7 +69,7 @@ const DatasetDashboard = () => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-    .then(res => {
+      .then(res => {
         const images = res.data;
         for (let i = 0; i < 10; i++) {
           axios.get(`${getBackendURL()}/datasets/${id}/images/train/${images[i]}`, {
@@ -72,14 +78,14 @@ const DatasetDashboard = () => {
             },
             responseType: 'blob', // Fetch as binary
           })
-          .then(res => setImageSrcList(imageSrcList => [...imageSrcList, URL.createObjectURL(res.data)]))
+            .then(res => setImageSrcList(imageSrcList => [...imageSrcList, URL.createObjectURL(res.data)]))
           // .catch
         }
       })
   }, [id]);
 
   const getTrainedModels = () => {
-    axios.get(`${getBackendURL()}/servers/napoleon/models/${id}`, {
+    axios.get(`${getBackendURL()}/servers/${selectedServer}/models/${id}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -95,7 +101,7 @@ const DatasetDashboard = () => {
   // }, [])
   useEffect(() => {
     getTrainedModels();
-  }, [id, trainVisible, stopTrainVisible])
+  }, [id, trainVisible, stopTrainVisible, selectedServer])
 
   const AccordionItems = () => {
     let accordionItems = []
@@ -137,7 +143,7 @@ const DatasetDashboard = () => {
   const ImagesTrain = () => {
     let images = []
     for (let imageSrc of imageSrcList) {
-      images.push(<CCol><CImage fluid src={imageSrc} /></CCol>)
+      images.push(<CCol key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
     }
     return images;
   }
@@ -159,7 +165,7 @@ const DatasetDashboard = () => {
 
   const handleTrainSubmit = async (e) => {
     const form = document.getElementById('trainConfig');
-    axios.post(`http://localhost:8000/servers/napoleon/train/${id}`, trainFormData, {
+    axios.post(`http://localhost:8000/servers/${selectedServer}/train/${id}`, trainFormData, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -167,11 +173,15 @@ const DatasetDashboard = () => {
   }
 
   const stopTraining = async (sessionName) => {
-    axios.delete(`http://localhost:8000/servers/napoleon/train/${sessionName}`, {
+    axios.delete(`http://localhost:8000/servers/${selectedServer}/train/${sessionName}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     }).then(res => { setStopTrainVisible(false) });
+  }
+
+  const handleServerChange = async (e) => {
+    setSelectedServer(e.target.value);
   }
 
   if (!siteReady) {
@@ -191,7 +201,7 @@ const DatasetDashboard = () => {
 
           <CContainer className="overflow-auto mt-2" style={{ height: '500px' }}>
             <CRow xs={{ cols: 2 }}>
-              <ImagesTrain/>
+              <ImagesTrain />
             </CRow>
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
@@ -204,7 +214,20 @@ const DatasetDashboard = () => {
 
 
         <CCol xs={5} className="d-flex flex-column bg-body rounded-4 p-3">
-          <h2>Trained models</h2>
+          <div className="d-flex">
+
+            <h2 className="w-100">Trained models</h2>
+            <CFormSelect
+              id="server-select"
+              size="sm"
+              className="w-auto mb-3"
+              options={getLocal('servers').map(server => ({
+                label: server.name,
+                value: server.id
+              }))}
+              onChange={handleServerChange}
+            />
+          </div>
 
           <div style={{ flexGrow: 1 }}>
 

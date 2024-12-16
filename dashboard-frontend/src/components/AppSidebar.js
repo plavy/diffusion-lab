@@ -20,25 +20,33 @@ import { AppSidebarNav } from './AppSidebarNav'
 import { logo } from 'src/assets/brand/logo'
 import { sygnet } from 'src/assets/brand/sygnet'
 
-import { getAuthHeader, getBackendURL } from "../utils";
+import { getAuthHeader, getBackendURL, getLocal, storeLocal } from "../utils";
 
 const AppSidebar = () => {
-  const [datasetList, setDatasetList] = useState("");
+  const [datasetList, setDatasetList] = useState([]);
   useEffect(() => {
+    const datasets = getLocal('datasets');
+    if (datasets) {
+      setDatasetList(datasets);
+    }
     axios.get(`${getBackendURL()}/datasets`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then((res) => setDatasetList(res.data));
+    }).then((res) => {setDatasetList(res.data); storeLocal('datasets', res.data)});
   }, []);
-  const [serverList, setServerList] = useState("");
+  const [serverList, setServerList] = useState([]);
   useEffect(() => {
+    const servers = getLocal('servers');
+    if (servers) {
+      setServerList(servers);
+    }
     axios.get(`${getBackendURL()}/servers`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then((res) => setServerList(res.data));
+      .then((res) => {setServerList(res.data); storeLocal('servers', res.data)});
   }, []);
 
   let navigation = [
