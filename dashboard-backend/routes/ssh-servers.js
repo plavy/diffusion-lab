@@ -134,21 +134,25 @@ router.post('/:id/sync', async (req, res) => {
 
         const ssh = new SSH2Promise(sshConfig);
         await ssh.exec(`mkdir -p ${scriptsDir}`);
-        ssh.close();
-
+        
         for (const scriptPath of files) {
             try {
-                const response = await getFileContent(auth.baseUrl + scriptPath, auth.username, auth.password);
-                const data = response.data;
-
+                const response3 = await getFileContent(auth.baseUrl + scriptPath, auth.username, auth.password);
+                const data = response3.data;
+                
                 const scriptName = scriptPath.split("/").pop();
                 const scp = await SCPClient(sshConfig);
                 await scp.writeFile(`${scriptsDir}/${scriptName}`, data);
                 scp.close();
+                
+                
             } catch (e) {
                 console.error(e);
             }
         }
+
+        await ssh.exec(`cd ${scriptsDir}; bash ~/${scriptsDir}/setup.sh;`);
+        ssh.close();
         res.json({ code: 0 })
     } catch (e) {
         console.error(e);

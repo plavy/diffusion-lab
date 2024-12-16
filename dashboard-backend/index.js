@@ -2,16 +2,6 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 
-const { Client } = require('ssh2');
-const conn = new Client();
-
-const sshConfig = {
-  host: 'napoleon.plavy.me',
-  port: 22,
-  username: 'plavy',
-  privateKey: require('fs').readFileSync('/home/plavy/.ssh/id_rsa')
-};
-
 app.use(cors());
 app.use(express.json());
 

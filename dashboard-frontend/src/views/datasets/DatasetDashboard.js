@@ -54,9 +54,32 @@ const DatasetDashboard = () => {
   const [trainedModels, setTrainedModels] = useState([]);
   const [trainedModelsReady, setTrainedModelsReady] = useState(false);
 
+  const [imageSrcList, setImageSrcList] = useState([]);
+
+  useEffect(() => {
+    setImageSrcList([]);
+    axios.get(`${getBackendURL()}/datasets/${id}/images/train`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    })
+    .then(res => {
+        const images = res.data;
+        for (let i = 0; i < 10; i++) {
+          axios.get(`${getBackendURL()}/datasets/${id}/images/train/${images[i]}`, {
+            headers: {
+              Authorization: getAuthHeader() // Encrypted by TLS
+            },
+            responseType: 'blob', // Fetch as binary
+          })
+          .then(res => setImageSrcList(imageSrcList => [...imageSrcList, URL.createObjectURL(res.data)]))
+          // .catch
+        }
+      })
+  }, [id]);
 
   const getTrainedModels = () => {
-    axios.get(`http://localhost:8000/servers/napoleon/models/${id}`, {
+    axios.get(`${getBackendURL()}/servers/napoleon/models/${id}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -111,6 +134,14 @@ const DatasetDashboard = () => {
     return accordionItems
   }
 
+  const ImagesTrain = () => {
+    let images = []
+    for (let imageSrc of imageSrcList) {
+      images.push(<CCol><CImage fluid src={imageSrc} /></CCol>)
+    }
+    return images;
+  }
+
   const [trainFormData, setTrainFormData] = useState({
     "preprocessing": "1",
     "model": "1",
@@ -160,12 +191,7 @@ const DatasetDashboard = () => {
 
           <CContainer className="overflow-auto mt-2" style={{ height: '500px' }}>
             <CRow xs={{ cols: 2 }}>
-              <CCol><CImage fluid src="/src/assets/images/angular.jpg" /></CCol>
-              <CCol><CImage fluid src="/src/assets/images/react.jpg" /></CCol>
-              <CCol><CImage fluid src="/src/assets/images/vue.jpg" /></CCol>
-              <CCol><CImage fluid src="/src/assets/images/angular.jpg" /></CCol>
-              <CCol><CImage fluid src="/src/assets/images/react.jpg" /></CCol>
-
+              <ImagesTrain/>
             </CRow>
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>

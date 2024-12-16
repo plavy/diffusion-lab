@@ -31,6 +31,20 @@ exports.getFileContent = async function getFileContent(url, username, password) 
     return response;
 }
 
+exports.getStream = async function getStream(url, username, password) {
+    // GET request to read file content
+    const response = await axios({
+        method: 'get',
+        responseType: 'stream',
+        url: url,
+        auth: {
+            username: username,
+            password: password,
+        },
+    });
+    return response;
+}
+
 exports.listDirectory = async function listDirectory(url, username, password) {
     // PROPFIND request to list directory contents
     const response = await axios({
@@ -52,7 +66,8 @@ exports.toSSHConfig = function toSSHConfig(metadata) {
         host: metadata.hostname,
         port: metadata.port,
         username: metadata.username,
-        privateKey: require('fs').readFileSync('/home/plavy/.ssh/id_rsa')
+        // privateKey: require('fs').readFileSync('/home/plavy/.ssh/id_rsa')
+        privateKey: require('fs').readFileSync('/Users/tinplavec/.ssh/id_ed25519')
     };
 
 }
