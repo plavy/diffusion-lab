@@ -5,6 +5,8 @@ const getAuth = require('../utils').getAuth;
 const listDirectory = require('../utils').listDirectory;
 const getFileContent = require('../utils').getFileContent;
 
+const DAVClient = require('webdav').createClient;
+
 const SSH2Promise = require('ssh2-promise');
 const SCPClient = require('node-scp').Client;
 const { toSSHConfig } = require('../utils');
@@ -24,34 +26,23 @@ router.get('/', async (req, res) => {
     if (!auth)
         return;
 
-    const parser = new xml2js.Parser();
-
     try {
-        const response = await listDirectory(auth.baseUrl + webdavPath + serverDir, auth.username, auth.password);
-        // Parse the XML response to a JS object
-        const parsedData = await parser.parseStringPromise(response.data);
-        const files = parsedData['d:multistatus']['d:response']
-            .map(item => item['d:href'][0])
-            .filter(item => item != webdavPath + serverDir);
-
-        let servers = [];
-        for (const serverPath of files) {
-
-            try {
-                const response = await getFileContent(auth.baseUrl + serverPath + metadataFile, auth.username, auth.password);
-                const metadata = response.data;
-                servers.push({
-                    id: metadata.id,
-                    name: metadata.name,
-                });
-            } catch (error) {
-                console.error('Error retrieving file content:', error.message);
-            }
-        }
+        const dav = await DAVClient(auth.baseUrl + webdavPath, auth)
+        const response = await dav.getDirectoryContents(serverDir);
+        const servers = await Promise.all(
+            response
+                .filter(file => file.type == 'directory')
+                .map(async file => {
+                    const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
+                    return {
+                        id: metadata.id,
+                        name: metadata.name
+                    }
+                }))
         res.json(servers);
 
     } catch (error) {
-        console.error('Error listing directory contents:', error.message);
+        console.error('Error for / :', error.message);
         res.status(400);
         res.send(error.message);
     }
@@ -121,34 +112,30 @@ router.post('/:id/sync', async (req, res) => {
 
     const id = req.params.id;
     try {
-        const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
-        const sshConfig = toSSHConfig(response1.data);
 
-        const parser = new xml2js.Parser();
-        const response2 = await listDirectory(auth.baseUrl + webdavPath + scriptsDir, auth.username, auth.password);
-        // Parse the XML response to a JS object
-        const parsedData = await parser.parseStringPromise(response2.data);
-        const files = parsedData['d:multistatus']['d:response']
-            .map(item => item['d:href'][0])
-            .filter(item => item != webdavPath + scriptsDir);
+        const dav = await DAVClient(auth.baseUrl + webdavPath, auth)
+        const response1a = await dav.getDirectoryContents(scriptsDir, { deep: true });
+        const response1b = await dav.getDirectoryContents(datasetDir, { deep: true });
+        const response1 = [...response1a, ...response1b];
+        const dirs = response1.filter(file => file.type == 'directory');
+        const files = response1.filter(file => file.type == 'file');
 
+        const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
         const ssh = new SSH2Promise(sshConfig);
-        await ssh.exec(`mkdir -p ${scriptsDir}`);
-        
-        for (const scriptPath of files) {
-            try {
-                const response3 = await getFileContent(auth.baseUrl + scriptPath, auth.username, auth.password);
-                const data = response3.data;
-                
-                const scriptName = scriptPath.split("/").pop();
-                const scp = await SCPClient(sshConfig);
-                await scp.writeFile(`${scriptsDir}/${scriptName}`, data);
-                scp.close();
-                
-                
-            } catch (e) {
-                console.error(e);
+        for (const dir of dirs) {
+            await ssh.exec(`mkdir -p ${dir.filename.replace(/^\/+/, '')}`);
+        }
+
+        try {
+            const scp = await SCPClient(sshConfig);
+            for (const file of files) {
+                const response2 = await dav.getFileContents(file.filename);
+                // const response2 = await dav.getFileContents(file.filename, { format: 'text' });
+                await scp.writeFile(file.filename.replace(/^\/+/, ''), response2);
             }
+            scp.close();
+        } catch (e) {
+            console.error(e);
         }
 
         await ssh.exec(`cd ${scriptsDir}; bash ~/${scriptsDir}/setup.sh;`);
@@ -215,6 +202,7 @@ router.post('/:id/train/:dsId', async (req, res) => {
         await scp.writeFile(`${cwd}/${metadataFile}`, JSON.stringify(req.body, null, 2));
         scp.close();
 
+        // const response2 = await ssh.exec(`cd ${cwd}; tmux new-session -d -s ${sessionName} 'source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/diffusion.py maps';`);
         const response2 = await ssh.exec(`cd ${cwd}; tmux new-session -d -s ${sessionName} 'source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/diffusion.py maps';`);
         ssh.close();
 

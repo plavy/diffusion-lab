@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { func } from "prop-types";
+import axios from "axios";
 
 export function getBackendURL() {
     return import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';

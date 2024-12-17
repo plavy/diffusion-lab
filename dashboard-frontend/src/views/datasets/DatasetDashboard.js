@@ -52,7 +52,7 @@ const DatasetDashboard = () => {
 
   const [imageSrcList, setImageSrcList] = useState([]);
 
-  const [selectedServer, setSelectedServer] = useState(getLocal('servers')[0].id); // hacky
+  const [selectedServer, setSelectedServer] = useState('napoleon'); // hacky
 
   useEffect(() => {
     setSiteReady(false);
