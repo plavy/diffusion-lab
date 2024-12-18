@@ -27,6 +27,7 @@ const ServerDashboard = () => {
 
   const [status, setStatus] = useState("");
   useEffect(() => {
+    setStatus("");
     axios.get(`http://localhost:8000/servers/${id}/status`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
