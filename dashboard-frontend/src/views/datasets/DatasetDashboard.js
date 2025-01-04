@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { json, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
 import { getAuthHeader, getBackendURL, getDateTime, getLocal } from "../../utils";
@@ -46,21 +46,18 @@ const DatasetDashboard = () => {
   const [generateVisible, setGenerateVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
   const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
+  const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
+  const [deleteTrainSessionName, setDeleteTrainSessionName] = useState(null);
 
   const [trainedModels, setTrainedModels] = useState([]);
   const [trainedModelsReady, setTrainedModelsReady] = useState(false);
 
   const [imageSrcList, setImageSrcList] = useState([]);
 
-  const [selectedServer, setSelectedServer] = useState('supek'); // hacky
-
   useEffect(() => {
     setSiteReady(false);
     setTrainedModelsReady(false);
   }, [id])
-  useEffect(() => {
-    setTrainedModelsReady(false);
-  }, [selectedServer])
 
   useEffect(() => {
     setImageSrcList([]);
@@ -85,7 +82,7 @@ const DatasetDashboard = () => {
   }, [id]);
 
   const getTrainedModels = () => {
-    axios.get(`${getBackendURL()}/servers/${selectedServer}/models/${id}`, {
+    axios.get(`${getBackendURL()}/datasets/${id}/models`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -101,7 +98,7 @@ const DatasetDashboard = () => {
   // }, [])
   useEffect(() => {
     getTrainedModels();
-  }, [id, trainVisible, stopTrainVisible, selectedServer])
+  }, [id, trainVisible, stopTrainVisible, deleteTrainVisible])
 
   const AccordionItems = () => {
     let accordionItems = []
@@ -115,7 +112,13 @@ const DatasetDashboard = () => {
           <CAccordionItem key={model.sessionName}>
             <CAccordionHeader>{model.sessionName}<CBadge className="m-1" color="secondary">{model.trainingProgress}%</CBadge></CAccordionHeader>
             <CAccordionBody>
+              Preprocessing: {model.preprocessing}
+              <br />
+              Model: {model.model}
+              <br />
               Hyperparameters: {hyperparameters}
+              <br />
+              SSH server: {model.sshServer}
               <br />
               <CButton type="submit" color="primary">Logs</CButton>
               <CButton type="submit" color="primary" className="m-2" onClick={() => {
@@ -129,9 +132,19 @@ const DatasetDashboard = () => {
           <CAccordionItem key={model.sessionName}>
             <CAccordionHeader>{model.sessionName}</CAccordionHeader>
             <CAccordionBody>
+              Preprocessing: {model.preprocessing}
+              <br />
+              Model: {model.model}
+              <br />
               Hyperparameters: {hyperparameters}
               <br />
+              SSH server: {model.sshServer}
+              <br />
               <CButton type="submit" color="primary">Generate image</CButton>
+              <CButton type="submit" color="primary" className="m-2" onClick={() => {
+                setDeleteTrainSessionName(model.sessionName);
+                setDeleteTrainVisible(true);
+              }}>Delete</CButton>
             </CAccordionBody>
           </CAccordionItem>
         )
@@ -153,8 +166,8 @@ const DatasetDashboard = () => {
     "model": "1",
     "hyperparameter:learningRate": "1e-10",
     "hyperparameter:maxSteps": "100",
-    "sessionName": `model-${getDateTime()}`,
-    "sshServer": "supek", // TODO: Fix
+    "sessionName": "session0",
+    "sshServer": "",
   });
 
   const handleTrainChange = (e) => {
@@ -181,8 +194,12 @@ const DatasetDashboard = () => {
     }).then(res => { setStopTrainVisible(false) });
   }
 
-  const handleServerChange = async (e) => {
-    setSelectedServer(e.target.value);
+  const deleteTraining = async (sessionName) => {
+    axios.delete(`${getBackendURL()}/datasets/${id}/models/${sessionName}`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then(res => { setDeleteTrainVisible(false) });
   }
 
   if (!siteReady) {
@@ -216,18 +233,7 @@ const DatasetDashboard = () => {
 
         <CCol xs={5} className="d-flex flex-column bg-body rounded-4 p-3">
           <div className="d-flex">
-
             <h2 className="w-100">Trained models</h2>
-            <CFormSelect
-              id="server-select"
-              size="sm"
-              className="w-auto mb-3"
-              options={getLocal('servers').map(server => ({
-                label: server.name,
-                value: server.id
-              }))}
-              onChange={handleServerChange}
-            />
           </div>
 
           <div style={{ flexGrow: 1 }}>
@@ -243,7 +249,13 @@ const DatasetDashboard = () => {
 
           <div className="row m-3">
             <div className="col d-grid">
-              <CButton color="primary" size='lg' onClick={() => setTrainVisible(true)}>Train new model</CButton>
+              <CButton color="primary" size='lg' onClick={() => {
+                setTrainFormData({
+                  ...trainFormData,
+                  ["sessionName"]: `model-${getDateTime()}`,
+                });
+                setTrainVisible(true);
+              }}>Train new model</CButton>
             </div>
             <div className="col d-grid">
               <CButton color="primary" size='lg' onClick={() => setGenerateVisible(true)}>Generate image</CButton>
@@ -305,13 +317,12 @@ const DatasetDashboard = () => {
               onChange={handleTrainChange}
             />
             <CFormSelect className="mt-2"
-              id="ssh-server"
-              floatingLabel="SSH Server"
+              id="sshServer"
+              floatingLabel="SSH server"
               options={getLocal('servers').map(server => ({ // TODO: Fix
                 label: server.name,
                 value: server.id
               }))}
-              value={trainFormData["sshServer"]}
               onChange={handleTrainChange}
             />
 
@@ -362,7 +373,6 @@ const DatasetDashboard = () => {
         </CModalFooter>
       </CModal>
 
-
       <CModal
         scrollable
         visible={stopTrainVisible}
@@ -381,6 +391,23 @@ const DatasetDashboard = () => {
         </CModalFooter>
       </CModal>
 
+      <CModal
+        scrollable
+        visible={deleteTrainVisible}
+        onClose={() => setDeleteTrainVisible(false)}
+        aria-labelledby="DeleteTrainModal"
+      >
+        <CModalHeader>
+          <CModalTitle id="DeleteTrainModal">Delete training</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <p>Are you sure you want to delete training {deleteTrainSessionName}?</p>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setDeleteTrainVisible(false)}>Cancel</CButton>
+          <CButton color="primary" onClick={() => deleteTraining(deleteTrainSessionName)}>Delete training</CButton>
+        </CModalFooter>
+      </CModal>
     </div>
 
   )

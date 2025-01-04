@@ -14,7 +14,7 @@ const serverDir = 'diffusion-lab/ssh-servers/';
 const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/'
 const datasetDir = 'diffusion-lab/datasets/';
-const trainedModelsDir = 'diffusion-lab/trained_models/';
+const trainedModelsDir = 'diffusion-lab/trained-models/';
 
 
 // List SSH servers
@@ -91,7 +91,7 @@ router.get('/:id/status', async (req, res) => {
         }
 
     } catch (error) {
-        console.error('Error retrieving file content:', error.message);
+        console.error('Error for /servers/:id/status for', id, ':', error.message);
     }
 });
 
@@ -141,38 +141,38 @@ router.post('/:id/sync', async (req, res) => {
         res.json({ code: 1 });
     }
 
-})
+});
 
 // List trained models
-router.get('/:id/models/:dsId', async (req, res) => {
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
+// router.get('/:id/models/:dsId', async (req, res) => {
+//     const auth = getAuth(req, res);
+//     if (!auth)
+//         return;
 
-    const id = req.params.id;
-    const datasetId = req.params.dsId;
+//     const id = req.params.id;
+//     const datasetId = req.params.dsId;
 
-    try {
-        const dav = DAVClient(auth.baseUrl, auth);
-        const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
-        const ssh = new SSH2Promise(sshConfig);
+//     try {
+//         const dav = DAVClient(auth.baseUrl, auth);
+//         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+//         const ssh = new SSH2Promise(sshConfig);
 
-        const sftp = ssh.sftp();
-        const response2 = await sftp.readdir(`${datasetDir}/${datasetId}/${trainedModelsDir}`);
-        sessions = []
-        for (const directory of response2) {
-            const sessionName = directory.filename;
-            const response3 = await ssh.exec(`cat ${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}/${metadataFile}`);
-            sessions.push(JSON.parse(response3));
-        }
-        ssh.close(); // not executed if error
-        res.json(sessions);
-    } catch (e) {
-        res.status(500);
-        res.json(e);
-        console.error(e);
-    }
-})
+//         const sftp = ssh.sftp();
+//         const response2 = await sftp.readdir(`${trainedModelsDir}/${datasetId}`);
+//         sessions = []
+//         for (const directory of response2) {
+//             const sessionName = directory.filename;
+//             const response3 = await ssh.exec(`cat ${trainedModelsDir}/${datasetId}/${sessionName}/${metadataFile}`);
+//             sessions.push(JSON.parse(response3));
+//         }
+//         ssh.close(); // not executed if error
+//         res.json(sessions);
+//     } catch (e) {
+//         res.status(500);
+//         res.json(e);
+//         console.error(e);
+//     }
+// })
 
 // Start training on SSH server
 router.post('/:id/train/:dsId', async (req, res) => {
@@ -198,15 +198,15 @@ router.post('/:id/train/:dsId', async (req, res) => {
         await scp.writeFile(`${cwd}/${metadataFile}`, JSON.stringify(req.body, null, 2));
         scp.close();
 
-        const response2 = await ssh.exec(`tmux new-session -d -s ${sessionName} 'source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/diffusion.py
-            --dav-url ${auth.baseUrl}
-            --dav-username ${auth.username}
-            --dav-password ${auth.password}
-            --dataset-dir ${datasetDir}/maps
-            --training-dir ${cwd}
-            --metadata-file ${metadataFile}
-            ;
-            sleep 60';`); // For debug
+        const command = `tmux new-session -d -s ${sessionName} "source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/train.py \
+            --dav-url '${auth.baseUrl}' \
+            --dav-username '${auth.username}' \
+            --dav-password '${auth.password}' \
+            --dataset-dir '${datasetDir}/${datasetId}' \
+            --training-dir '${cwd}' \
+            --metadata-file '${cwd}/${metadataFile}' \
+            ; sleep 60";`;
+        const response2 = await ssh.exec(command);
         ssh.close();
 
         res.json(response2);

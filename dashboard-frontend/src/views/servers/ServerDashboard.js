@@ -123,7 +123,13 @@ const ServerDashboard = () => {
         <CButton type="submit" color="primary" onClick={syncScripts}>
           <CSpinner size="sm" className="me-1" hidden={!syncingVisible}/>
           <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible}/>
-          Prepare or update environment
+          Sync environment
+        </CButton>
+        <CButton type="submit" color="primary">
+          Reinstall environment
+        </CButton>
+        <CButton type="submit" color="primary">
+          Clear cache
         </CButton>
       </div>
 
