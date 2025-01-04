@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const xml2js = require('xml2js');
 const getAuth = require('../utils').getAuth;
-const listDirectory = require('../utils').listDirectory;
 const getFileContent = require('../utils').getFileContent;
 
 const DAVClient = require('webdav').createClient;
@@ -13,11 +11,10 @@ const SCPClient = require('node-scp').Client;
 const { toSSHConfig } = require('../utils');
 
 const serverDir = 'diffusion-lab/ssh-servers/';
-const webdavPath = '/remote.php/webdav/';
 const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/'
 const datasetDir = 'diffusion-lab/datasets/';
-const trainedModelsDir = 'trained_models';
+const trainedModelsDir = 'diffusion-lab/trained_models/';
 
 
 // List SSH servers
@@ -28,7 +25,7 @@ router.get('/', async (req, res) => {
         return;
 
     try {
-        const dav = DAVClient(auth.baseUrl + webdavPath, auth)
+        const dav = DAVClient(auth.baseUrl, auth)
         const response = await dav.getDirectoryContents(serverDir);
         const servers = await Promise.all(
             response
@@ -59,19 +56,12 @@ router.get('/:id', async (req, res) => {
 
     const id = req.params.id;
     try {
-        const response = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
-        const metadata = response.data;
-        res.json({
-            id: metadata.id,
-            name: metadata.name,
-            hostname: metadata.hostname,
-            port: metadata.port,
-            username: metadata.username
-        });
+        const dav = DAVClient(auth.baseUrl, auth)
+        const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
+        res.json(metadata);
     } catch (error) {
         console.error('Error retrieving file content:', error.message);
     }
-
 
 });
 
@@ -84,9 +74,10 @@ router.get('/:id/status', async (req, res) => {
 
     const id = req.params.id;
     try {
-        const response = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
+        const dav = DAVClient(auth.baseUrl, auth)
+        const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
         try {
-            const ssh = new SSH2Promise(toSSHConfig(response.data));
+            const ssh = new SSH2Promise(toSSHConfig(metadata));
             await ssh.connect();
             ssh.close();
 
@@ -114,10 +105,8 @@ router.post('/:id/sync', async (req, res) => {
     const id = req.params.id;
     try {
 
-        const dav = DAVClient(auth.baseUrl + webdavPath, auth)
-        const response1a = await dav.getDirectoryContents(scriptsDir, { deep: true });
-        const response1b = await dav.getDirectoryContents(datasetDir, { deep: true });
-        const response1 = [...response1a, ...response1b];
+        const dav = DAVClient(auth.baseUrl, auth)
+        const response1 = await dav.getDirectoryContents(scriptsDir, { deep: true });
         const dirs = response1.filter(file => file.type == 'directory');
         const files = response1.filter(file => file.type == 'file');
 
@@ -133,7 +122,7 @@ router.post('/:id/sync', async (req, res) => {
             const concurrencyLimit = pLimit(10);
             const tasks = files.map(async file => concurrencyLimit(async () => {
                 const response2 = await dav.getFileContents(file.filename);
-                await scp.writeFile(file.filename.replace(/^\/+/, ''), response2);
+                await scp.writeFile(file.filename.replace(/^\/+/, ''), response2); // Remove slash from beginning
             }));
             await Promise.all(tasks);
             console.timeEnd('syncServer');
@@ -164,7 +153,7 @@ router.get('/:id/models/:dsId', async (req, res) => {
     const datasetId = req.params.dsId;
 
     try {
-        const dav = DAVClient(auth.baseUrl + webdavPath, auth);
+        const dav = DAVClient(auth.baseUrl, auth);
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
         const ssh = new SSH2Promise(sshConfig);
 
@@ -197,9 +186,9 @@ router.post('/:id/train/:dsId', async (req, res) => {
     const sessionName = req.body.sessionName;
 
     try {
-        const cwd = `${datasetDir}/${datasetId}/${trainedModelsDir}/${sessionName}`
+        const cwd = `${trainedModelsDir}/${datasetId}/${sessionName}`
 
-        const dav = DAVClient(auth.baseUrl + webdavPath, auth);
+        const dav = DAVClient(auth.baseUrl, auth);
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
 
         const ssh = new SSH2Promise(sshConfig);
@@ -209,8 +198,15 @@ router.post('/:id/train/:dsId', async (req, res) => {
         await scp.writeFile(`${cwd}/${metadataFile}`, JSON.stringify(req.body, null, 2));
         scp.close();
 
-        // const response2 = await ssh.exec(`cd ${cwd}; tmux new-session -d -s ${sessionName} 'source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/diffusion.py maps';`);
-        const response2 = await ssh.exec(`cd diffusion-lab; tmux new-session -d -s ${sessionName} 'source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/diffusion.py maps';`);
+        const response2 = await ssh.exec(`tmux new-session -d -s ${sessionName} 'source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/diffusion.py
+            --dav-url ${auth.baseUrl}
+            --dav-username ${auth.username}
+            --dav-password ${auth.password}
+            --dataset-dir ${datasetDir}/maps
+            --training-dir ${cwd}
+            --metadata-file ${metadataFile}
+            ;
+            sleep 60';`); // For debug
         ssh.close();
 
         res.json(response2);
@@ -232,7 +228,7 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
     const sessionName = req.params.sessionName;
 
     try {
-        const response1 = await getFileContent(auth.baseUrl + webdavPath + serverDir + id + '/' + metadataFile, auth.username, auth.password);
+        const response1 = await getFileContent(auth.baseUrl + serverDir + id + '/' + metadataFile, auth.username, auth.password);
         const sshConfig = toSSHConfig(response1.data);
         const ssh = new SSH2Promise(sshConfig);
         const response2 = await ssh.exec(`tmux kill-session -t ${sessionName}`);

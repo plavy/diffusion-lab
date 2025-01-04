@@ -6,7 +6,7 @@ METADATA_FILE = 'metadata.json'
 
 def train(args):
   with open(METADATA_FILE, 'r') as f:
-		metadata = json.load(f)
+    metadata = json.load(f)
   max_steps = int(metadata["hyperparameter:maxSteps"])
   for i in range(1, max_steps + 1):
     print(f'{args[0]} {i}')

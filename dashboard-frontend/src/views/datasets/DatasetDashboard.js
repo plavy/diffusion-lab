@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { json, useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getLocal } from "../../utils";
+import { getAuthHeader, getBackendURL, getDateTime, getLocal } from "../../utils";
 
 import {
   CButton,
@@ -52,7 +52,7 @@ const DatasetDashboard = () => {
 
   const [imageSrcList, setImageSrcList] = useState([]);
 
-  const [selectedServer, setSelectedServer] = useState('napoleon'); // hacky
+  const [selectedServer, setSelectedServer] = useState('supek'); // hacky
 
   useEffect(() => {
     setSiteReady(false);
@@ -153,7 +153,8 @@ const DatasetDashboard = () => {
     "model": "1",
     "hyperparameter:learningRate": "1e-10",
     "hyperparameter:maxSteps": "100",
-    "sessionName": "model-timestamp"
+    "sessionName": `model-${getDateTime()}`,
+    "sshServer": "supek", // TODO: Fix
   });
 
   const handleTrainChange = (e) => {
@@ -165,7 +166,7 @@ const DatasetDashboard = () => {
 
   const handleTrainSubmit = async (e) => {
     const form = document.getElementById('trainConfig');
-    axios.post(`http://localhost:8000/servers/${selectedServer}/train/${id}`, trainFormData, {
+    axios.post(`http://localhost:8000/servers/${trainFormData.sshServer}/train/${id}`, trainFormData, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -301,6 +302,16 @@ const DatasetDashboard = () => {
               type="text"
               floatingLabel="Session name"
               value={trainFormData["sessionName"]}
+              onChange={handleTrainChange}
+            />
+            <CFormSelect className="mt-2"
+              id="ssh-server"
+              floatingLabel="SSH Server"
+              options={getLocal('servers').map(server => ({ // TODO: Fix
+                label: server.name,
+                value: server.id
+              }))}
+              value={trainFormData["sshServer"]}
               onChange={handleTrainChange}
             />
 
