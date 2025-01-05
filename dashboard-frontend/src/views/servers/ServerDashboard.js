@@ -120,13 +120,13 @@ const ServerDashboard = () => {
       </CForm>
 
       <div className="mt-2 flex-row gap-1">
+        <CButton type="submit" color="primary">
+          Reinstall environment
+        </CButton>
         <CButton type="submit" color="primary" onClick={syncScripts}>
           <CSpinner size="sm" className="me-1" hidden={!syncingVisible}/>
           <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible}/>
           Sync environment
-        </CButton>
-        <CButton type="submit" color="primary">
-          Reinstall environment
         </CButton>
         <CButton type="submit" color="primary">
           Clear cache

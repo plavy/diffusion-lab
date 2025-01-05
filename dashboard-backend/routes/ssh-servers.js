@@ -95,7 +95,7 @@ router.get('/:id/status', async (req, res) => {
     }
 });
 
-// Sync files from nextcloud to SSH server
+// Sync files from DAV server to SSH server
 router.post('/:id/sync', async (req, res) => {
 
     const auth = getAuth(req, res);
@@ -234,6 +234,42 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
         const response2 = await ssh.exec(`tmux kill-session -t ${sessionName}`);
         ssh.close();
         res.json(response2);
+    } catch (e) {
+        res.status(500);
+        res.json(e);
+        console.error(e);
+    }
+});
+
+// Generate image
+router.post('/:id/generate/:dsId', async (req, res) => {
+
+    const auth = getAuth(req, res);
+    if (!auth)
+        return;
+
+    const id = req.params.id;
+    const datasetId = req.params.dsId;
+    const trainedModel = req.body.trainedModel;
+    try {
+        const cwd = `${trainedModelsDir}/${datasetId}/${trainedModel}`
+
+        const dav = DAVClient(auth.baseUrl, auth);
+        const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+
+        const ssh = new SSH2Promise(sshConfig);
+        
+        const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
+        --number '${req.body.numberImages}' \
+        `;
+        await ssh.exec(command);
+        ssh.close();
+
+        const scp = await SCPClient(sshConfig);
+        const file = await scp.readFile(`${cwd}/generated.jpg`);
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.send(file);
+        scp.close();
     } catch (e) {
         res.status(500);
         res.json(e);

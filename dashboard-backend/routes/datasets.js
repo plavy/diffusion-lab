@@ -116,10 +116,15 @@ router.get('/:id/models', async (req, res) => {
             response
                 .filter(file => file.type == 'directory')
                 .map(async file => {
-                    const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
-                    return metadata;
-                }))
-        res.json(models);
+                    try {
+
+                        const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
+                        return metadata;
+                    } catch (error) {
+                        console.error('Error for /datasets/:id/models for', id, file.basename, error.message);
+                    }
+                }));
+        res.json(models.filter(model => model != null)); // Exclude models with errors
     } catch (error) {
         res.status(500);
         res.json(error);

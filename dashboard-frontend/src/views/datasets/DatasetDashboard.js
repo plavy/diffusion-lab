@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getDateTime, getLocal } from "../../utils";
+import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
 
 import {
   CButton,
@@ -33,17 +33,8 @@ const DatasetDashboard = () => {
 
   const [siteReady, setSiteReady] = useState(false);
 
-  const [metadata, setMetadata] = useState("");
-  useEffect(() => {
-    axios.get(`${getBackendURL()}/datasets/${id}`, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      }
-    }).then((res) => { setMetadata(res.data); setSiteReady(true); });
-  }, [id]);
-
-  const [trainVisible, setTrainVisible] = useState(false);
   const [generateVisible, setGenerateVisible] = useState(false);
+  const [startTrainVisible, setStartTrainVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
   const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
   const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
@@ -53,6 +44,53 @@ const DatasetDashboard = () => {
   const [trainedModelsReady, setTrainedModelsReady] = useState(false);
 
   const [imageSrcList, setImageSrcList] = useState([]);
+  const [generatedImageSrcList, setGeneratedImageSrcList] = useState([]);
+
+  const [serverList, setServerList] = useState([]);
+  const setStartSSHServer = (servers) => {
+    if (servers.length > 0) {
+      const lastTrainServer = getLocal('last-train-server');
+      if (lastTrainServer && servers.some(server => server.id === lastTrainServer)) {
+        setTrainFormData({
+          ...trainFormData,
+          ["sessionName"]: `model-${getDateTime()}`,
+          ["sshServer"]: lastTrainServer,
+        });
+      } else {
+        setTrainFormData({
+          ...trainFormData,
+          ["sessionName"]: `model-${getDateTime()}`,
+          ["sshServer"]: servers[0].id,
+        });
+      }
+    }
+  }
+  useEffect(() => {
+    const servers = getLocal('servers');
+    if (servers) {
+      setServerList(servers);
+      setStartSSHServer(servers);
+    }
+    axios.get(`${getBackendURL()}/servers`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    })
+      .then((res) => {
+        setServerList(res.data);
+        storeLocal('servers', res.data);
+        setStartSSHServer(res.data);
+      });
+  }, []);
+
+  const [metadata, setMetadata] = useState("");
+  useEffect(() => {
+    axios.get(`${getBackendURL()}/datasets/${id}`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then((res) => { setMetadata(res.data); setSiteReady(true); });
+  }, [id]);
 
   useEffect(() => {
     setSiteReady(false);
@@ -98,14 +136,14 @@ const DatasetDashboard = () => {
   // }, [])
   useEffect(() => {
     getTrainedModels();
-  }, [id, trainVisible, stopTrainVisible, deleteTrainVisible])
+  }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible]);
 
   const AccordionItems = () => {
     let accordionItems = []
     for (let model of trainedModels) {
       const hyperparameters = Object.entries(model)
         .filter(([key]) => key.startsWith('hyperparameter:'))
-        .map(([key, value]) => `${key.replace("hyperparameter:", "")} = ${value}`)
+        .map(([key, value]) => `${key.replace("hyperparameter:", "")}=${value}`)
         .join(", ");
       if (model.trainingDone == false) {
         accordionItems.push(
@@ -121,7 +159,7 @@ const DatasetDashboard = () => {
               SSH server: {model.sshServer}
               <br />
               <CButton type="submit" color="primary">Logs</CButton>
-              <CButton type="submit" color="primary" className="m-2" onClick={() => {
+              <CButton type="submit" color="primary" className="ms-2" onClick={() => {
                 setStopTrainSessionName(model.sessionName);
                 setStopTrainVisible(true);
               }}>Stop training</CButton>
@@ -140,8 +178,16 @@ const DatasetDashboard = () => {
               <br />
               SSH server: {model.sshServer}
               <br />
-              <CButton type="submit" color="primary">Generate image</CButton>
-              <CButton type="submit" color="primary" className="m-2" onClick={() => {
+              <CButton type="submit" color="primary" onClick={() => {
+                setGenerateFormData({
+                  ...generateFormData,
+                  ["trainedModel"]: model.sessionName,
+                  ["sshServer"]: model.sshServer,
+                });
+                setGenerateVisible(true);
+              }}>Generate image</CButton>
+              <CButton type="submit" color="primary" className="ms-2">Details</CButton>
+              <CButton type="submit" color="primary" className="ms-2" onClick={() => {
                 setDeleteTrainSessionName(model.sessionName);
                 setDeleteTrainVisible(true);
               }}>Delete</CButton>
@@ -166,7 +212,7 @@ const DatasetDashboard = () => {
     "model": "1",
     "hyperparameter:learningRate": "1e-10",
     "hyperparameter:maxSteps": "100",
-    "sessionName": "session0",
+    "sessionName": "",
     "sshServer": "",
   });
 
@@ -178,12 +224,12 @@ const DatasetDashboard = () => {
   };
 
   const handleTrainSubmit = async (e) => {
-    const form = document.getElementById('trainConfig');
-    axios.post(`http://localhost:8000/servers/${trainFormData.sshServer}/train/${id}`, trainFormData, {
+    storeLocal('last-train-server', trainFormData.sshServer);
+    axios.post(`${getBackendURL()}/servers/${trainFormData.sshServer}/train/${id}`, trainFormData, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then(res => { setTrainVisible(false) });
+    }).then(res => { setStartTrainVisible(false) });
   }
 
   const stopTraining = async (sessionName) => {
@@ -201,6 +247,29 @@ const DatasetDashboard = () => {
       }
     }).then(res => { setDeleteTrainVisible(false) });
   }
+
+  const [generateFormData, setGenerateFormData] = useState({
+    "trainedModel": "",
+    "numberImages": "4",
+    "sshServer": "",
+  });
+
+  const handleGenerateChange = (e) => {
+    setGenerateFormData({
+      ...generateFormData,
+      [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleGenerateSubmit = async (e) => {
+    axios.post(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${id}`, generateFormData, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      },
+      responseType: 'blob', // Fetch as binary
+    }).then(res => { setGeneratedImageSrcList(generatedImageSrcList => [...generatedImageSrcList, URL.createObjectURL(res.data)]) })
+  }
+
 
   if (!siteReady) {
     return (<div className="pt-3 text-center">
@@ -254,7 +323,7 @@ const DatasetDashboard = () => {
                   ...trainFormData,
                   ["sessionName"]: `model-${getDateTime()}`,
                 });
-                setTrainVisible(true);
+                setStartTrainVisible(true);
               }}>Train new model</CButton>
             </div>
             <div className="col d-grid">
@@ -266,8 +335,8 @@ const DatasetDashboard = () => {
 
       <CModal
         scrollable
-        visible={trainVisible}
-        onClose={() => setTrainVisible(false)}
+        visible={startTrainVisible}
+        onClose={() => setStartTrainVisible(false)}
         aria-labelledby="TrainModal"
         size="lg"
       >
@@ -319,17 +388,18 @@ const DatasetDashboard = () => {
             <CFormSelect className="mt-2"
               id="sshServer"
               floatingLabel="SSH server"
-              options={getLocal('servers').map(server => ({ // TODO: Fix
+              options={serverList.map(server => ({
                 label: server.name,
                 value: server.id
               }))}
+              value={trainFormData["sshServer"]}
               onChange={handleTrainChange}
             />
 
           </CForm>
         </CModalBody>
         <CModalFooter>
-          <CButton color="secondary" onClick={() => setTrainVisible(false)}>Cancel</CButton>
+          <CButton color="secondary" onClick={() => setStartTrainVisible(false)}>Cancel</CButton>
           <CButton color="primary" type="submit" onClick={handleTrainSubmit}>Start training</CButton>
         </CModalFooter>
       </CModal>
@@ -349,27 +419,41 @@ const DatasetDashboard = () => {
           <CForm>
 
             <CFormSelect
-              id="trained-model"
+              id="trainedModel"
               floatingLabel="Trained model"
-              options={[
-                { label: 'Latent_diffusion_2024-11-10', value: '1' },
-                { label: 'Two', value: '2' },
-                { label: 'Three', value: '3' }
-              ]}
+              options={trainedModels
+                .filter(model => model.trainingDone)
+                .map(model => ({
+                  label: model.sessionName,
+                  value: model.sessionName
+                }))}
+              value={generateFormData["trainedModel"]}
+              onChange={handleGenerateChange}
             />
             <CFormInput className="mt-2"
-              id="number"
+              id="numberImages"
               type="text"
               floatingLabel="Number of images"
-              value="4"
+              value={generateFormData["numberImages"]}
+              onChange={handleGenerateChange}
             />
-
+            <CFormSelect className="mt-2"
+              id="sshServer"
+              floatingLabel="SSH server"
+              options={serverList.map(server => ({
+                label: server.name,
+                value: server.id
+              }))}
+              value={generateFormData["sshServer"]}
+              onChange={handleGenerateChange}
+            />
           </CForm>
+          <CImage fluid src={generatedImageSrcList[0]} />
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setGenerateVisible(false)}>Close</CButton>
           <CButton color="primary">Download</CButton>
-          <CButton color="primary">Generate</CButton>
+          <CButton color="primary" onClick={handleGenerateSubmit}>Generate</CButton>
         </CModalFooter>
       </CModal>
 

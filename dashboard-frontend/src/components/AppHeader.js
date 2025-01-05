@@ -119,6 +119,10 @@ const AppHeader = () => {
               </CDropdownItem>
               <CDropdownItem href="#">
                 <CIcon icon={cilSettings} className="me-2" />
+                Auto-refresh
+              </CDropdownItem>
+              <CDropdownItem href="#">
+                <CIcon icon={cilSettings} className="me-2" />
                 Settings
               </CDropdownItem>
             </CDropdownMenu>
