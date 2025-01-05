@@ -15,7 +15,7 @@ const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/'
 const datasetDir = 'diffusion-lab/datasets/';
 const trainedModelsDir = 'diffusion-lab/trained-models/';
-
+const samplesDir = '/tmp/samples';
 
 // List SSH servers
 router.get('/', async (req, res) => {
@@ -259,14 +259,43 @@ router.post('/:id/generate/:dsId', async (req, res) => {
 
         const ssh = new SSH2Promise(sshConfig);
         
+        const timestamp = Date.now();
         const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
+        --save-dir ${samplesDir} \
+        --base-name ${timestamp} \
         --number '${req.body.numberImages}' \
         `;
         await ssh.exec(command);
         ssh.close();
 
+        let paths = [];
+        for(let i = 0; i < req.body.numberImages; i++) {
+            paths.push(`${timestamp}-${i}.jpg`) // Hacky
+        }
+        res.json(paths);
+    } catch (e) {
+        res.status(500);
+        res.json(e);
+        console.error(e);
+    }
+});
+
+// Get generated image
+router.get('/:id/generate/:name', async (req, res) => {
+
+    const auth = getAuth(req, res);
+    if (!auth)
+        return;
+
+    const id = req.params.id;
+    const name = req.params.name;
+
+    try {
+        const dav = DAVClient(auth.baseUrl, auth);
+        const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+
         const scp = await SCPClient(sshConfig);
-        const file = await scp.readFile(`${cwd}/generated.jpg`);
+        const file = await scp.readFile(`${samplesDir}/${name}`);
         res.setHeader('Content-Type', 'image/jpeg');
         res.send(file);
         scp.close();

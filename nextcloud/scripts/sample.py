@@ -5,6 +5,7 @@ import time
 import json
 import re
 import csv
+from datetime import datetime
 
 from webdav3.client import Client
 
@@ -36,12 +37,16 @@ def sample(args):
     out=model(batch_size=batch_size, shape=(CROP_SIZE, CROP_SIZE), verbose=False)
 
     transform = torchvision.transforms.ToPILImage()
+
+    os.makedirs(args.save_dir, exist_ok=True)
     for i in range(batch_size):
         pil_img = transform(out[i].detach().cpu())
-        pil_img.save("generated.jpg")
+        pil_img.save(os.path.join(args.save_dir, f'{args.base_name}-{i}.jpg'))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sample images from model")
+    parser.add_argument("--save-dir", required=True, help="Directory to save images")
+    parser.add_argument("--base-name", required=True, help="Base name of images")
     parser.add_argument("--number", required=True, help="Number of images")
     
     args = parser.parse_args()

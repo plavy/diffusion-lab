@@ -129,7 +129,7 @@ const DatasetDashboard = () => {
       .catch((e) => { setTrainedModels([]); setTrainedModelsReady(true); })
   }
   useEffect(() => {
-    if(getLocal("auto-refresh-enabled")) {
+    if (getLocal("auto-refresh-enabled")) {
       const interval = setInterval(() => {
         getTrainedModels();
       }, 2000);
@@ -209,6 +209,14 @@ const DatasetDashboard = () => {
     return images;
   }
 
+  const ImagesGenerate = () => {
+    let images = [];
+    for (let imageSrc of generatedImageSrcList) {
+      images.push(<CCol key={imageSrc}><CImage className="w-100" fluid src={imageSrc} /></CCol>)
+    }
+    return images;
+  }
+
   const [trainFormData, setTrainFormData] = useState({
     "preprocessing": "1",
     "model": "1",
@@ -268,8 +276,20 @@ const DatasetDashboard = () => {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       },
-      responseType: 'blob', // Fetch as binary
-    }).then(res => { setGeneratedImageSrcList(generatedImageSrcList => [...generatedImageSrcList, URL.createObjectURL(res.data)]) })
+    }).then(res => {
+      setGeneratedImageSrcList([]);
+      const images = res.data;
+      for (let i = 0; i < images.length; i++) {
+        axios.get(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${images[i]}`, {
+          headers: {
+            Authorization: getAuthHeader() // Encrypted by TLS
+          },
+          responseType: 'blob', // Fetch as binary
+        })
+          .then(res => setGeneratedImageSrcList(generatedImageSrcList => [...generatedImageSrcList, URL.createObjectURL(res.data)]))
+        // .catch
+      }
+    })
   }
 
 
@@ -450,7 +470,9 @@ const DatasetDashboard = () => {
               onChange={handleGenerateChange}
             />
           </CForm>
-          <CImage fluid src={generatedImageSrcList[0]} />
+          <CRow xs={{ cols: 2 }}>
+            <ImagesGenerate />
+          </CRow>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setGenerateVisible(false)}>Close</CButton>
