@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import {
@@ -13,6 +13,7 @@ import {
   CNavLink,
   CNavItem,
   useColorModes,
+  CFormCheck,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import {
@@ -26,21 +27,33 @@ import {
 } from '@coreui/icons'
 
 import { AppBreadcrumb } from './index'
-import { getNextcloudSettings } from '../utils'
+import { getLocal, getNextcloudSettings, storeLocal } from '../utils'
 
 const AppHeader = () => {
   const headerRef = useRef()
   const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
-
+  
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
+  
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
 
   useEffect(() => {
     document.addEventListener('scroll', () => {
       headerRef.current &&
         headerRef.current.classList.toggle('shadow-sm', document.documentElement.scrollTop > 0)
     })
+    const are = getLocal("auto-refresh-enabled");
+    if (are) {
+      setAutoRefreshEnabled(true);
+    }
   }, [])
+
+  const handleAutoRefreshChange = (e) => {
+    setAutoRefreshEnabled(e.target.checked);
+    storeLocal("auto-refresh-enabled", e.target.checked);
+    window.location.reload();
+  }
 
   return (
     <CHeader position="sticky" className="mb-4 p-0" ref={headerRef}>
@@ -117,9 +130,8 @@ const AppHeader = () => {
                 <CIcon icon={cilUser} className="me-2" />
                 Profile
               </CDropdownItem>
-              <CDropdownItem href="#">
-                <CIcon icon={cilSettings} className="me-2" />
-                Auto-refresh
+              <CDropdownItem>
+                <CFormCheck label="Auto-refresh" checked={autoRefreshEnabled} onChange={handleAutoRefreshChange}></CFormCheck>
               </CDropdownItem>
               <CDropdownItem href="#">
                 <CIcon icon={cilSettings} className="me-2" />

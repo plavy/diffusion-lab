@@ -168,11 +168,16 @@ def train(args):
 
     trainer.fit(model=model, train_dataloaders=train_dl, val_dataloaders=val_dl)
     trainer.save_checkpoint(os.path.join(args.training_dir, 'model.ckpt'))
-    set_metadata(args.metadata_file, "trainingDone", True)
     print('Traning done. Model saved.')
 
     print('Uploading to WebDAV server')
-    dav.upload_sync(local_path=args.training_dir, remote_path=args.training_dir)
+    for filename in os.listdir(args.training_dir):
+        file_path = os.path.join(args.training_dir, filename)
+        dav.upload_sync(local_path=file_path, remote_path=file_path)
+    
+    # Mark training as done
+    set_metadata(args.metadata_file, "trainingDone", True)
+    dav.upload_sync(local_path=args.metadata_file, remote_path=args.metadata_file)
     print('Done.')
 
 

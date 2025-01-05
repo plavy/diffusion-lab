@@ -128,12 +128,14 @@ const DatasetDashboard = () => {
       .then(res => { setTrainedModels(res.data); setTrainedModelsReady(true); })
       .catch((e) => { setTrainedModels([]); setTrainedModelsReady(true); })
   }
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     getTrainedModels();
-  //   }, 2000);
-  //   return () => clearInterval(interval);
-  // }, [])
+  useEffect(() => {
+    if(getLocal("auto-refresh-enabled")) {
+      const interval = setInterval(() => {
+        getTrainedModels();
+      }, 2000);
+      return () => clearInterval(interval);
+    }
+  }, [])
   useEffect(() => {
     getTrainedModels();
   }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible]);
