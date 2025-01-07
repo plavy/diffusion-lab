@@ -23,7 +23,8 @@ import {
   CRow,
   CCol,
   CImage,
-  CSpinner
+  CSpinner,
+  CProgress
 } from "@coreui/react";
 
 
@@ -34,6 +35,7 @@ const DatasetDashboard = () => {
   const [siteReady, setSiteReady] = useState(false);
 
   const [generateVisible, setGenerateVisible] = useState(false);
+  const [generateFormVisible, setGenerateFormVisible] = useState(false);
   const [startTrainVisible, setStartTrainVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
   const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
@@ -187,6 +189,8 @@ const DatasetDashboard = () => {
                   ["sshServer"]: model.sshServer,
                 });
                 setGenerateVisible(true);
+                setGenerateFormVisible(true);
+                setGeneratedImageSrcList([]);
               }}>Generate image</CButton>
               <CButton type="submit" color="primary" className="ms-2">Details</CButton>
               <CButton type="submit" color="primary" className="ms-2" onClick={() => {
@@ -211,8 +215,12 @@ const DatasetDashboard = () => {
 
   const ImagesGenerate = () => {
     let images = [];
-    for (let imageSrc of generatedImageSrcList) {
-      images.push(<CCol key={imageSrc}><CImage className="w-100" fluid src={imageSrc} /></CCol>)
+    for (let i in generatedImageSrcList) {
+      if (generatedImageSrcList[i]) {
+        images.push(<CCol className="p-1" key={i}><CImage className="w-100" fluid src={generatedImageSrcList[i]} /></CCol>)
+      } else {
+        images.push(<CCol className="p-1" key={i}><CProgress className="w-100 h-100 ratio ratio-1x1" variant="striped" animated value={100} /></CCol>)
+      }
     }
     return images;
   }
@@ -272,12 +280,13 @@ const DatasetDashboard = () => {
   };
 
   const handleGenerateSubmit = async (e) => {
+    setGenerateFormVisible(false);
+    setGeneratedImageSrcList(new Array(Number(generateFormData.numberImages)).fill(null));
     axios.post(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${id}`, generateFormData, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       },
     }).then(res => {
-      setGeneratedImageSrcList([]);
       const images = res.data;
       for (let i = 0; i < images.length; i++) {
         axios.get(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${images[i]}`, {
@@ -286,7 +295,12 @@ const DatasetDashboard = () => {
           },
           responseType: 'blob', // Fetch as binary
         })
-          .then(res => setGeneratedImageSrcList(generatedImageSrcList => [...generatedImageSrcList, URL.createObjectURL(res.data)]))
+          .then(res => {
+            setGeneratedImageSrcList((prev) => {
+              prev[i] = URL.createObjectURL(res.data);
+              return [...prev];
+            });
+          })
         // .catch
       }
     })
@@ -308,7 +322,7 @@ const DatasetDashboard = () => {
           <h2>Dataset {metadata.name}</h2>
           <div>Author: {metadata.author}</div>
 
-          <CContainer className="overflow-auto mt-2" style={{ height: '500px' }}>
+          <CContainer className="overflow-y-scroll mt-2" style={{ height: '500px' }}>
             <CRow xs={{ cols: 2 }}>
               <ImagesTrain />
             </CRow>
@@ -349,7 +363,11 @@ const DatasetDashboard = () => {
               }}>Train new model</CButton>
             </div>
             <div className="col d-grid">
-              <CButton color="primary" size='lg' onClick={() => setGenerateVisible(true)}>Generate image</CButton>
+              <CButton color="primary" size='lg' onClick={() => {
+                setGenerateVisible(true);
+                setGenerateFormVisible(true);
+                setGeneratedImageSrcList([]);
+                }}>Generate image</CButton>
             </div>
           </div>
         </CCol>
@@ -438,7 +456,7 @@ const DatasetDashboard = () => {
           <CModalTitle id="GenerateModal">Generate</CModalTitle>
         </CModalHeader>
         <CModalBody>
-          <CForm>
+          {generateFormVisible && <CForm>
 
             <CFormSelect
               id="trainedModel"
@@ -469,14 +487,14 @@ const DatasetDashboard = () => {
               value={generateFormData["sshServer"]}
               onChange={handleGenerateChange}
             />
-          </CForm>
+          </CForm>}
           <CRow xs={{ cols: 2 }}>
             <ImagesGenerate />
           </CRow>
         </CModalBody>
         <CModalFooter>
           <CButton color="secondary" onClick={() => setGenerateVisible(false)}>Close</CButton>
-          <CButton color="primary">Download</CButton>
+          {/* <CButton color="primary">Download</CButton> */}
           <CButton color="primary" onClick={handleGenerateSubmit}>Generate</CButton>
         </CModalFooter>
       </CModal>
