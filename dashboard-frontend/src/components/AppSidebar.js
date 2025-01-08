@@ -33,7 +33,7 @@ const AppSidebar = () => {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then((res) => {setDatasetList(res.data); storeLocal('datasets', res.data)});
+    }).then((res) => { setDatasetList(res.data); storeLocal('datasets', res.data) });
   }, []);
   const [serverList, setServerList] = useState([]);
   useEffect(() => {
@@ -46,7 +46,7 @@ const AppSidebar = () => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then((res) => {setServerList(res.data); storeLocal('servers', res.data)});
+      .then((res) => { setServerList(res.data); storeLocal('servers', res.data) });
   }, []);
 
   let navigation = [
@@ -124,9 +124,10 @@ const AppSidebar = () => {
       </CSidebarHeader>
       <AppSidebarNav items={navigation} />
       <CSidebarFooter className="border-top d-none d-lg-flex">
-        <CSidebarToggler
+        <span>&copy; 2025 Tin Plavec</span>
+        {/* <CSidebarToggler
           onClick={() => dispatch({ type: 'set', sidebarUnfoldable: !unfoldable })}
-        />
+        /> */}
       </CSidebarFooter>
     </CSidebar>
   )
