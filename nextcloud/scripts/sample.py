@@ -31,10 +31,15 @@ def sample(args):
         return
 
     batch_size = int(args.number)
-    model = PixelDiffusion.load_from_checkpoint(checkpoint_path=os.path.join('model.ckpt'))
 
+    def on_progress_change(i, n):
+        progress_file = os.path.join(args.save_dir, f'{args.base_name}-progress.txt')
+        with open(progress_file, 'w') as f:
+            f.write(str(round((n - i) / n * 100)))
+
+    model = PixelDiffusion.load_from_checkpoint(checkpoint_path=os.path.join('model.ckpt'))
     model.cuda()
-    out=model(batch_size=batch_size, shape=(CROP_SIZE, CROP_SIZE), verbose=False)
+    out=model(batch_size=batch_size, shape=(CROP_SIZE, CROP_SIZE), verbose=False, progress_callback=on_progress_change)
 
     transform = torchvision.transforms.ToPILImage()
 

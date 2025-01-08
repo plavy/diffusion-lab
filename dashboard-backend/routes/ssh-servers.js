@@ -241,15 +241,16 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
     }
 });
 
-// Generate image
-router.post('/:id/generate/:dsId', async (req, res) => {
+// Generate images
+router.post('/:id/generate/:name', async (req, res) => {
 
     const auth = getAuth(req, res);
     if (!auth)
         return;
 
     const id = req.params.id;
-    const datasetId = req.params.dsId;
+    const baseName = req.params.name;
+    const datasetId = req.body.datasetId;
     const trainedModel = req.body.trainedModel;
     try {
         const cwd = `${trainedModelsDir}/${datasetId}/${trainedModel}`
@@ -259,20 +260,15 @@ router.post('/:id/generate/:dsId', async (req, res) => {
 
         const ssh = new SSH2Promise(sshConfig);
         
-        const timestamp = Date.now();
         const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
         --save-dir ${samplesDir} \
-        --base-name ${timestamp} \
+        --base-name ${baseName} \
         --number '${req.body.numberImages}' \
         `;
         await ssh.exec(command);
         ssh.close();
 
-        let paths = [];
-        for(let i = 0; i < req.body.numberImages; i++) {
-            paths.push(`${timestamp}-${i}.jpg`) // Hacky
-        }
-        res.json(paths);
+        res.json({code: 0});
     } catch (e) {
         res.status(500);
         res.json(e);
@@ -281,7 +277,34 @@ router.post('/:id/generate/:dsId', async (req, res) => {
 });
 
 // Get generated image
-router.get('/:id/generate/:name', async (req, res) => {
+router.get('/:id/generate/:name/image/:number', async (req, res) => {
+
+    const auth = getAuth(req, res);
+    if (!auth)
+        return;
+
+    const id = req.params.id;
+    const baseName = req.params.name;
+    const number = req.params.number;
+
+    try {
+        const dav = DAVClient(auth.baseUrl, auth);
+        const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+
+        const scp = await SCPClient(sshConfig);
+        const file = await scp.readFile(`${samplesDir}/${baseName}-${number}.jpg`);
+        res.setHeader('Content-Type', 'image/jpeg');
+        res.send(file);
+        scp.close();
+    } catch (e) {
+        res.status(500);
+        res.json(e);
+        console.error(e);
+    }
+});
+
+// Get generation progress
+router.get('/:id/generate/:name/progress', async (req, res) => {
 
     const auth = getAuth(req, res);
     if (!auth)
@@ -295,14 +318,17 @@ router.get('/:id/generate/:name', async (req, res) => {
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
 
         const scp = await SCPClient(sshConfig);
-        const file = await scp.readFile(`${samplesDir}/${name}`);
-        res.setHeader('Content-Type', 'image/jpeg');
+        const file = await scp.readFile(`${samplesDir}/${name}-progress.txt`);
         res.send(file);
         scp.close();
     } catch (e) {
-        res.status(500);
-        res.json(e);
-        console.error(e);
+        if(e.code == 2) {
+            res.send("0");
+        } else {
+            res.status(500);
+            res.json(e);
+            console.error(e);
+        }
     }
 });
 

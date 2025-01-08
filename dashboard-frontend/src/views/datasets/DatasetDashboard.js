@@ -24,7 +24,8 @@ import {
   CCol,
   CImage,
   CSpinner,
-  CProgress
+  CProgress,
+  CPlaceholder
 } from "@coreui/react";
 
 
@@ -36,6 +37,8 @@ const DatasetDashboard = () => {
 
   const [generateVisible, setGenerateVisible] = useState(false);
   const [generateFormVisible, setGenerateFormVisible] = useState(false);
+  const [generateProgress, setGenerateProgress] = useState(0);
+  const [generateProgressRequestParam, setGenerateProgressRequestParam] = useState(null);
   const [startTrainVisible, setStartTrainVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
   const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
@@ -130,6 +133,8 @@ const DatasetDashboard = () => {
       .then(res => { setTrainedModels(res.data); setTrainedModelsReady(true); })
       .catch((e) => { setTrainedModels([]); setTrainedModelsReady(true); })
   }
+
+  // Get trained models
   useEffect(() => {
     if (getLocal("auto-refresh-enabled")) {
       const interval = setInterval(() => {
@@ -141,6 +146,36 @@ const DatasetDashboard = () => {
   useEffect(() => {
     getTrainedModels();
   }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible]);
+
+  // Track generation progress
+  useEffect(() => {
+    let updateProgress = true;
+
+    if (generateVisible && generateProgressRequestParam) {
+      const interval = setInterval(() => {
+        axios.get(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${generateProgressRequestParam}/progress`, {
+          headers: {
+            Authorization: getAuthHeader() // Encrypted by TLS
+          },
+        }).then(res => {
+          if (updateProgress) {
+            const progress = Number(res.data);
+            setGenerateProgress(progress);
+            console.log('Updated progress ' + progress);
+            if (progress == 100) {
+              updateProgress = false;
+              setGenerateProgressRequestParam(null);
+            }
+          }
+        })
+      }, 500);
+      return () => {
+        updateProgress = false;
+        clearInterval(interval);
+      }
+    }
+  }, [generateVisible, generateProgressRequestParam])
+
 
   const AccordionItems = () => {
     let accordionItems = []
@@ -188,9 +223,7 @@ const DatasetDashboard = () => {
                   ["trainedModel"]: model.sessionName,
                   ["sshServer"]: model.sshServer,
                 });
-                setGenerateVisible(true);
-                setGenerateFormVisible(true);
-                setGeneratedImageSrcList([]);
+                openGenerateModal();
               }}>Generate image</CButton>
               <CButton type="submit" color="primary" className="ms-2">Details</CButton>
               <CButton type="submit" color="primary" className="ms-2" onClick={() => {
@@ -208,7 +241,7 @@ const DatasetDashboard = () => {
   const ImagesTrain = () => {
     let images = []
     for (let imageSrc of imageSrcList) {
-      images.push(<CCol key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
+      images.push(<CCol className="p-1" key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
     }
     return images;
   }
@@ -219,7 +252,9 @@ const DatasetDashboard = () => {
       if (generatedImageSrcList[i]) {
         images.push(<CCol className="p-1" key={i}><CImage className="w-100" fluid src={generatedImageSrcList[i]} /></CCol>)
       } else {
-        images.push(<CCol className="p-1" key={i}><CProgress className="w-100 h-100 ratio ratio-1x1" variant="striped" animated value={100} /></CCol>)
+        images.push(<CCol className="p-1" key={i}>
+          <CProgress className="w-100 h-100 ratio ratio-1x1" variant="striped" animated value={generateProgress} />
+        </CCol>)
       }
     }
     return images;
@@ -272,6 +307,14 @@ const DatasetDashboard = () => {
     "sshServer": "",
   });
 
+  const openGenerateModal = () => {
+    setGenerateProgress(0);
+    setGenerateProgressRequestParam(null);
+    setGeneratedImageSrcList([]);
+    setGenerateVisible(true);
+    setGenerateFormVisible(true);
+  }
+
   const handleGenerateChange = (e) => {
     setGenerateFormData({
       ...generateFormData,
@@ -282,14 +325,16 @@ const DatasetDashboard = () => {
   const handleGenerateSubmit = async (e) => {
     setGenerateFormVisible(false);
     setGeneratedImageSrcList(new Array(Number(generateFormData.numberImages)).fill(null));
-    axios.post(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${id}`, generateFormData, {
+    const timestamp = Date.now();
+    const body = { ...generateFormData };
+    body['datasetId'] = id;
+    axios.post(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${timestamp}`, body, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       },
     }).then(res => {
-      const images = res.data;
-      for (let i = 0; i < images.length; i++) {
-        axios.get(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${images[i]}`, {
+      for (let i = 0; i < generateFormData.numberImages; i++) {
+        axios.get(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${timestamp}/image/${i}`, {
           headers: {
             Authorization: getAuthHeader() // Encrypted by TLS
           },
@@ -303,7 +348,9 @@ const DatasetDashboard = () => {
           })
         // .catch
       }
-    })
+    });
+    setGenerateProgress(0);
+    setGenerateProgressRequestParam(timestamp);
   }
 
 
@@ -364,10 +411,8 @@ const DatasetDashboard = () => {
             </div>
             <div className="col d-grid">
               <CButton color="primary" size='lg' onClick={() => {
-                setGenerateVisible(true);
-                setGenerateFormVisible(true);
-                setGeneratedImageSrcList([]);
-                }}>Generate image</CButton>
+                openGenerateModal();
+              }}>Generate image</CButton>
             </div>
           </div>
         </CCol>
