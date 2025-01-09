@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader } from "../../utils";
+import { getAuthHeader, getBackendURL } from "../../utils";
 import { CAlert, CButton, CForm, CFormInput, CSpinner } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
 import { cilCheck, cilWarning } from "@coreui/icons";
@@ -14,7 +14,7 @@ const ServerDashboard = () => {
   const [siteReady, setSiteReady] = useState(false);
   useEffect(() => {
     setSiteReady(false)
-  }, [id])
+  }, [id]);
 
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
@@ -53,9 +53,20 @@ const ServerDashboard = () => {
   )
 
   const handleChange = (e) => {
+    setMetadata({
+      ...metadata,
+      [e.target.id]: e.target.value,
+  });
   };
 
   const handleSubmit = (e) => {
+    e.preventDefault();
+    axios.put(`${getBackendURL()}/servers/${id}`, metadata, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    })
+    .then(res => { window.location.reload(); });
   };
 
   const [syncingVisible, setSyncingVisible] = useState(false);
@@ -88,9 +99,9 @@ const ServerDashboard = () => {
       <CForm onSubmit={handleSubmit}>
         <CFormInput className="mb-3"
           type="text"
-          id="id"
-          label="ID"
-          value={metadata.id}
+          id="name"
+          label="Display name"
+          value={metadata.name}
           onChange={handleChange}
         ></CFormInput>
         <CFormInput className="mb-3"
@@ -114,7 +125,7 @@ const ServerDashboard = () => {
           value={metadata.username}
           onChange={handleChange}
         />
-        <CButton color="primary" type="submit" className="mb-3">
+        <CButton color="primary" type="submit">
           Save
         </CButton>
       </CForm>
