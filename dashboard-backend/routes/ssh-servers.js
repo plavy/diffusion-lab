@@ -20,7 +20,7 @@ const samplesDir = '/tmp/samples';
 // List SSH servers
 router.get('/', async (req, res) => {
     try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const response = await dav.getDirectoryContents(serverDir);
         const servers = await Promise.all(
             response
@@ -35,9 +35,9 @@ router.get('/', async (req, res) => {
         res.json(servers);
 
     } catch (error) {
-        console.error('Error for / :', error.message);
-        res.status(400);
+        res.status(500);
         res.send(error.message);
+        console.error('Error for /servers', ':', error.message);
     }
 
 });
@@ -46,12 +46,31 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     const id = req.params.id;
     try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
         res.json(metadata);
     } catch (error) {
-        console.error('Error retrieving file content:', error.message);
+        res.status(500);
+        res.send(error.message);
+        console.error('Error for /servers/:id for', id, ':', error.message);
     }
+
+});
+
+// Update config of SSH server
+router.put('/:id', async (req, res) => {
+    const id = req.params.id;
+    try {
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
+        const newMetadata = JSON.stringify(req.body, null, 2);
+        await dav.putFileContents(serverDir + id + "/" + metadataFile, newMetadata);
+        res.json({ 'code': 0 })
+    } catch (error) {
+        res.status(500);
+        res.send(error.message);
+        console.error('Error for /servers/:id for', id, ':', error.message);
+    }
+
 
 });
 
@@ -59,13 +78,11 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/status', async (req, res) => {
     const id = req.params.id;
     try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
+        const ssh = new SSH2Promise({ ...toSSHConfig(metadata), readyTimeout: 4000, reconnect: false });
         try {
-            const ssh = new SSH2Promise(toSSHConfig(metadata));
             await ssh.connect();
-            ssh.close();
-
             res.json({ code: 0, message: "Server reachable" });
         } catch (e) {
             if (e.level == "client-authentication")
@@ -73,6 +90,8 @@ router.get('/:id/status', async (req, res) => {
             else
                 res.json({ code: 1, message: "Server unreachable" });
             // console.log(e);
+        } finally {
+            ssh.close();
         }
 
     } catch (error) {
@@ -85,7 +104,7 @@ router.post('/:id/sync', async (req, res) => {
     const id = req.params.id;
     try {
 
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const response1 = await dav.getDirectoryContents(scriptsDir, { deep: true });
         const dirs = response1.filter(file => file.type == 'directory');
         const files = response1.filter(file => file.type == 'file');
@@ -114,45 +133,14 @@ router.post('/:id/sync', async (req, res) => {
         console.time('runSetup');
         await ssh.exec(`cd ${scriptsDir}; bash ~/${scriptsDir}/setup.sh;`);
         console.timeEnd('runSetup');
-        ssh.close();
         res.json({ code: 0 });
+        ssh.close();
     } catch (e) {
         console.error(e);
         res.json({ code: 1 });
     }
 
 });
-
-// List trained models
-// router.get('/:id/models/:dsId', async (req, res) => {
-//     const auth = getAuth(req, res);
-//     if (!auth)
-//         return;
-
-//     const id = req.params.id;
-//     const datasetId = req.params.dsId;
-
-//     try {
-//         const dav = DAVClient(auth.baseUrl, auth);
-//         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
-//         const ssh = new SSH2Promise(sshConfig);
-
-//         const sftp = ssh.sftp();
-//         const response2 = await sftp.readdir(`${trainedModelsDir}/${datasetId}`);
-//         sessions = []
-//         for (const directory of response2) {
-//             const sessionName = directory.filename;
-//             const response3 = await ssh.exec(`cat ${trainedModelsDir}/${datasetId}/${sessionName}/${metadataFile}`);
-//             sessions.push(JSON.parse(response3));
-//         }
-//         ssh.close(); // not executed if error
-//         res.json(sessions);
-//     } catch (e) {
-//         res.status(500);
-//         res.json(e);
-//         console.error(e);
-//     }
-// })
 
 // Start training on SSH server
 router.post('/:id/train/:dsId', async (req, res) => {
@@ -216,11 +204,11 @@ router.post('/:id/generate/:name', async (req, res) => {
     try {
         const datasetId = req.body.datasetId;
         const trainedModel = req.body.trainedModel;
-        
+
         const dav = DAVClient(req.auth.baseUrl, req.auth);
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
         const ssh = new SSH2Promise(sshConfig);
-        
+
         const cwd = `${trainedModelsDir}/${datasetId}/${trainedModel}`
         const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
         --save-dir ${samplesDir} \
@@ -230,7 +218,7 @@ router.post('/:id/generate/:name', async (req, res) => {
         await ssh.exec(command);
         ssh.close();
 
-        res.json({code: 0});
+        res.json({ code: 0 });
     } catch (e) {
         res.status(500);
         res.json(e);
@@ -274,7 +262,7 @@ router.get('/:id/generate/:name/progress', async (req, res) => {
         res.send(file);
         scp.close();
     } catch (e) {
-        if(e.code == 2) {
+        if (e.code == 2) {
             res.send("0");
         } else {
             res.status(500);

@@ -70,13 +70,22 @@ router.get('/:id/images/train/:name', async (req, res) => {
     const id = req.params.id;
     const name = req.params.name;
     try {
-        // const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         // const response = await dav.getFileContents(datasetDir + id + '/' + trainingDir + name, { format: "text" });
 
-        const response = await getStream(req.auth.baseUrl + '/' + datasetDir + id + '/' + trainingDir + name, req.auth.username, req.auth.password);
-        res.setHeader('Content-Type', response.headers['content-type']);
-        response.data.pipe(res);
+        // const response = await getStream(req.auth.baseUrl + '/' + datasetDir + id + '/' + trainingDir + name, req.auth.username, req.auth.password);
+        // res.setHeader('Content-Type', response.headers['content-type']);
+        // response.data.pipe(res);
+        const readStream = dav.createReadStream(datasetDir + id + '/' + trainingDir + name)
+        readStream.on('error', (error) => {
+            res.status(error.status);
+            res.send(error.message);
+            console.error('Error for /datasets/:id/images/:name for', id, ':', error.message);    
+        })
+        readStream.pipe(res);
     } catch (error) {
+        res.status(500);
+        res.send(error.message);
         console.error('Error for /datasets/:id/images/:name for', id, ':', error.message);
     }
 });
