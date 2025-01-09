@@ -35,6 +35,7 @@ const DatasetDashboard = () => {
 
   const [siteReady, setSiteReady] = useState(false);
 
+  
   const [generateVisible, setGenerateVisible] = useState(false);
   const [generateFormVisible, setGenerateFormVisible] = useState(false);
   const [generateProgress, setGenerateProgress] = useState(0);
@@ -44,9 +45,10 @@ const DatasetDashboard = () => {
   const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
   const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
   const [deleteTrainSessionName, setDeleteTrainSessionName] = useState(null);
-
+  
   const [trainedModels, setTrainedModels] = useState([]);
   const [trainedModelsReady, setTrainedModelsReady] = useState(false);
+  const [activeAccordionItem, setActiveAccordionItem] = useState(null);
 
   const [imageSrcList, setImageSrcList] = useState([]);
   const [generatedImageSrcList, setGeneratedImageSrcList] = useState([]);
@@ -119,7 +121,7 @@ const DatasetDashboard = () => {
             responseType: 'blob', // Fetch as binary
           })
             .then(res => setImageSrcList(imageSrcList => [...imageSrcList, URL.createObjectURL(res.data)]))
-          // .catch
+            // .catch 
         }
       })
   }, [id]);
@@ -161,7 +163,6 @@ const DatasetDashboard = () => {
           if (updateProgress) {
             const progress = Number(res.data);
             setGenerateProgress(progress);
-            console.log('Updated progress ' + progress);
             if (progress == 100) {
               updateProgress = false;
               setGenerateProgressRequestParam(null);
@@ -176,9 +177,10 @@ const DatasetDashboard = () => {
     }
   }, [generateVisible, generateProgressRequestParam])
 
-
+  // Trained models accordion
   const AccordionItems = () => {
-    let accordionItems = []
+    let accordionItems = [];
+    console.log("active item" + activeAccordionItem);
     for (let model of trainedModels) {
       const hyperparameters = Object.entries(model)
         .filter(([key]) => key.startsWith('hyperparameter:'))
@@ -186,7 +188,7 @@ const DatasetDashboard = () => {
         .join(", ");
       if (model.trainingDone == false) {
         accordionItems.push(
-          <CAccordionItem key={model.sessionName}>
+          <CAccordionItem key={model.sessionName} itemKey={model.sessionName}>
             <CAccordionHeader>{model.sessionName}<CBadge className="m-1" color="secondary">{model.trainingProgress}%</CBadge></CAccordionHeader>
             <CAccordionBody>
               Preprocessing: {model.preprocessing}
@@ -206,8 +208,8 @@ const DatasetDashboard = () => {
           </CAccordionItem>)
       } else {
         accordionItems.push(
-          <CAccordionItem key={model.sessionName}>
-            <CAccordionHeader>{model.sessionName}</CAccordionHeader>
+          <CAccordionItem key={model.sessionName} itemKey={model.sessionName}>
+            <CAccordionHeader>{model.sessionName} </CAccordionHeader>
             <CAccordionBody>
               Preprocessing: {model.preprocessing}
               <br />
@@ -260,6 +262,7 @@ const DatasetDashboard = () => {
     return images;
   }
 
+  // Train Modal
   const [trainFormData, setTrainFormData] = useState({
     "preprocessing": "1",
     "model": "1",
@@ -301,6 +304,7 @@ const DatasetDashboard = () => {
     }).then(res => { setDeleteTrainVisible(false) });
   }
 
+  // Generate Modal
   const [generateFormData, setGenerateFormData] = useState({
     "trainedModel": "",
     "numberImages": "4",
@@ -353,7 +357,7 @@ const DatasetDashboard = () => {
     setGenerateProgressRequestParam(timestamp);
   }
 
-
+  // Site not ready
   if (!siteReady) {
     return (<div className="pt-3 text-center">
       <CSpinner color="primary" variant="grow" />
@@ -391,7 +395,7 @@ const DatasetDashboard = () => {
           <div style={{ flexGrow: 1 }}>
 
             <div className="overflow-auto" style={{ height: '500px' }}>
-              <CAccordion>
+              <CAccordion activeItemKey={activeAccordionItem}>
                 {trainedModelsReady ? <AccordionItems /> : <div className="pt-3 text-center">
                   <CSpinner color="primary" variant="grow" />
                 </div>}
