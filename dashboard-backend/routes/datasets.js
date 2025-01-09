@@ -13,13 +13,8 @@ const metadataFile = 'metadata.json';
 
 // List datasets
 router.get('/', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const response = await dav.getDirectoryContents(datasetDir);
 
         const datasets = await Promise.all(
@@ -43,14 +38,9 @@ router.get('/', async (req, res) => {
 
 // Get metadata of a dataset
 router.get('/:id', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const metadata = JSON.parse(await dav.getFileContents(datasetDir + id + "/" + metadataFile, { format: "text" }));
         res.json(metadata);
     } catch (error) {
@@ -60,14 +50,9 @@ router.get('/:id', async (req, res) => {
 
 // Get train images of a dataset
 router.get('/:id/images/train', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const response = await dav.getDirectoryContents(datasetDir + id + '/' + trainingDir);
 
         const files = response
@@ -82,17 +67,13 @@ router.get('/:id/images/train', async (req, res) => {
 
 // Get a specific train image of a dataset
 router.get('/:id/images/train/:name', async (req, res) => {
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     const name = req.params.name;
     try {
         // const dav = DAVClient(auth.baseUrl, auth)
         // const response = await dav.getFileContents(datasetDir + id + '/' + trainingDir + name, { format: "text" });
 
-        const response = await getStream(auth.baseUrl + '/' + datasetDir + id + '/' + trainingDir + name, auth.username, auth.password);
+        const response = await getStream(req.auth.baseUrl + '/' + datasetDir + id + '/' + trainingDir + name, req.auth.username, req.auth.password);
         res.setHeader('Content-Type', response.headers['content-type']);
         response.data.pipe(res);
     } catch (error) {
@@ -102,14 +83,9 @@ router.get('/:id/images/train/:name', async (req, res) => {
 
 // List trained and training models of a dataset
 router.get('/:id/models', async (req, res) => {
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
-
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const response = await dav.getDirectoryContents(trainedModelsDir + id);
 
         const models = await Promise.all(
@@ -134,15 +110,10 @@ router.get('/:id/models', async (req, res) => {
 
 // Delete a trained model of a dataset
 router.delete('/:id/models/:sessionName', async (req, res) => {
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     const sessionName = req.params.sessionName;
-
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const response = await dav.deleteFile(trainedModelsDir + id + '/' + sessionName);
         res.json({ code: 0 });
     } catch (error) {
@@ -150,7 +121,6 @@ router.delete('/:id/models/:sessionName', async (req, res) => {
         res.json({ code: 1 });
         console.error('Error for /datasets/:id/models/:sessionName for', id, sessionName, ':', error.message);
     }
-
 });
 
 module.exports = router;

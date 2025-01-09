@@ -19,13 +19,8 @@ const samplesDir = '/tmp/samples';
 
 // List SSH servers
 router.get('/', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const response = await dav.getDirectoryContents(serverDir);
         const servers = await Promise.all(
             response
@@ -49,14 +44,9 @@ router.get('/', async (req, res) => {
 
 // Get config of SSH server
 router.get('/:id', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
         res.json(metadata);
     } catch (error) {
@@ -67,14 +57,9 @@ router.get('/:id', async (req, res) => {
 
 // Get status of SSH server
 router.get('/:id/status', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     try {
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
         try {
             const ssh = new SSH2Promise(toSSHConfig(metadata));
@@ -97,15 +82,10 @@ router.get('/:id/status', async (req, res) => {
 
 // Sync files from DAV server to SSH server
 router.post('/:id/sync', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     try {
 
-        const dav = DAVClient(auth.baseUrl, auth)
+        const dav = DAVClient(req.auth.baseUrl, req.auth)
         const response1 = await dav.getDirectoryContents(scriptsDir, { deep: true });
         const dirs = response1.filter(file => file.type == 'directory');
         const files = response1.filter(file => file.type == 'file');
@@ -176,19 +156,13 @@ router.post('/:id/sync', async (req, res) => {
 
 // Start training on SSH server
 router.post('/:id/train/:dsId', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     const datasetId = req.params.dsId;
-    const sessionName = req.body.sessionName;
-
     try {
+        const sessionName = req.body.sessionName;
         const cwd = `${trainedModelsDir}/${datasetId}/${sessionName}`
 
-        const dav = DAVClient(auth.baseUrl, auth);
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
 
         const ssh = new SSH2Promise(sshConfig);
@@ -219,17 +193,11 @@ router.post('/:id/train/:dsId', async (req, res) => {
 
 // Stop training on SSH server
 router.delete('/:id/train/:sessionName', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     const sessionName = req.params.sessionName;
-
     try {
-        const response1 = await getFileContent(auth.baseUrl + serverDir + id + '/' + metadataFile, auth.username, auth.password);
-        const sshConfig = toSSHConfig(response1.data);
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
+        const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
         const ssh = new SSH2Promise(sshConfig);
         const response2 = await ssh.exec(`tmux kill-session -t ${sessionName}`);
         ssh.close();
@@ -243,23 +211,17 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
 
 // Generate images
 router.post('/:id/generate/:name', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     const baseName = req.params.name;
-    const datasetId = req.body.datasetId;
-    const trainedModel = req.body.trainedModel;
     try {
-        const cwd = `${trainedModelsDir}/${datasetId}/${trainedModel}`
-
-        const dav = DAVClient(auth.baseUrl, auth);
+        const datasetId = req.body.datasetId;
+        const trainedModel = req.body.trainedModel;
+        
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
-
         const ssh = new SSH2Promise(sshConfig);
         
+        const cwd = `${trainedModelsDir}/${datasetId}/${trainedModel}`
         const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
         --save-dir ${samplesDir} \
         --base-name ${baseName} \
@@ -278,17 +240,12 @@ router.post('/:id/generate/:name', async (req, res) => {
 
 // Get generated image
 router.get('/:id/generate/:name/image/:number', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     const baseName = req.params.name;
     const number = req.params.number;
 
     try {
-        const dav = DAVClient(auth.baseUrl, auth);
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
 
         const scp = await SCPClient(sshConfig);
@@ -305,16 +262,11 @@ router.get('/:id/generate/:name/image/:number', async (req, res) => {
 
 // Get generation progress
 router.get('/:id/generate/:name/progress', async (req, res) => {
-
-    const auth = getAuth(req, res);
-    if (!auth)
-        return;
-
     const id = req.params.id;
     const name = req.params.name;
 
     try {
-        const dav = DAVClient(auth.baseUrl, auth);
+        const dav = DAVClient(req.auth.baseUrl, req.auth);
         const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
 
         const scp = await SCPClient(sshConfig);
