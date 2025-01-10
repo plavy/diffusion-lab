@@ -52,11 +52,11 @@ const AppSidebar = () => {
   let navigation = [
     {
       component: CNavItem,
-      name: 'Dashboard',
-      to: '/dashboard',
+      name: 'Overview',
+      to: '/',
       badge: {
         color: 'info',
-        text: 'NEW',
+        text: 'HOME',
       },
     },
     {

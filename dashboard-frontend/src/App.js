@@ -42,7 +42,7 @@ const App = () => {
         <Routes>
           <Route exact path="/404" name="Page 404" element={<Page404 />} />
           <Route exact path="/500" name="Page 500" element={<Page500 />} />
-          <Route path="*" name="Home" element={<DefaultLayout />} />
+          <Route path="*" name="Overview" element={<DefaultLayout />} />
         </Routes>
       </Suspense>
     </BrowserRouter>

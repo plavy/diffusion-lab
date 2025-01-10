@@ -35,7 +35,7 @@ const DatasetDashboard = () => {
 
   const [siteReady, setSiteReady] = useState(false);
 
-  
+
   const [generateVisible, setGenerateVisible] = useState(false);
   const [generateFormVisible, setGenerateFormVisible] = useState(false);
   const [generateProgress, setGenerateProgress] = useState(0);
@@ -45,7 +45,7 @@ const DatasetDashboard = () => {
   const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
   const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
   const [deleteTrainSessionName, setDeleteTrainSessionName] = useState(null);
-  
+
   const [trainedModels, setTrainedModels] = useState([]);
   const [trainedModelsReady, setTrainedModelsReady] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState(null);
@@ -121,7 +121,7 @@ const DatasetDashboard = () => {
             responseType: 'blob', // Fetch as binary
           })
             .then(res => setImageSrcList(imageSrcList => [...imageSrcList, URL.createObjectURL(res.data)]))
-            // .catch 
+          // .catch 
         }
       })
   }, [id]);
@@ -180,7 +180,6 @@ const DatasetDashboard = () => {
   // Trained models accordion
   const AccordionItems = () => {
     let accordionItems = [];
-    console.log("active item" + activeAccordionItem);
     for (let model of trainedModels) {
       const hyperparameters = Object.entries(model)
         .filter(([key]) => key.startsWith('hyperparameter:'))
@@ -365,42 +364,40 @@ const DatasetDashboard = () => {
   }
 
   return (
-    <div className="d-flex flex-column h-100">
-      <CRow className="flex-grow-1 gap-3">
+    <>
+      <div className="flex-grow-1 gap-3 d-flex flex-row" style={{ height: 0 }}>
 
-        <CCol className="bg-body rounded-4 p-3">
+        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 3 }}>
 
           <h2>Dataset {metadata.name}</h2>
           <div>Author: {metadata.author}</div>
 
-          <CContainer className="overflow-y-scroll mt-2" style={{ height: '500px' }}>
+          <CContainer className="flex-grow-1 mt-2 overflow-auto">
             <CRow xs={{ cols: 2 }}>
               <ImagesTrain />
             </CRow>
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
 
-          <CButton type="submit" color="primary" action="#" className="m-2">Add new dataset</CButton>
-          <CButton type="submit" color="primary" action="#" className="m-2">Add new image</CButton>
-          <CButton type="submit" color="primary" action="#">Take a photo</CButton>
-
-        </CCol>
-
-
-        <CCol xs={5} className="d-flex flex-column bg-body rounded-4 p-3">
-          <div className="d-flex">
-            <h2 className="w-100">Trained models</h2>
-          </div>
-
-          <div style={{ flexGrow: 1 }}>
-
-            <div className="overflow-auto" style={{ height: '500px' }}>
-              <CAccordion activeItemKey={activeAccordionItem}>
-                {trainedModelsReady ? <AccordionItems /> : <div className="pt-3 text-center">
-                  <CSpinner color="primary" variant="grow" />
-                </div>}
-              </CAccordion>
+          <div className="row m-3">
+            <div className="col d-grid">
+              <CButton type="submit" color="primary" action="#">Add new image</CButton>
             </div>
+            <div className="col d-grid">
+              <CButton type="submit" color="primary" action="#">Take a photo</CButton>
+            </div>
+          </div>
+        </div>
+
+        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2 }}>
+          <h2>Trained models</h2>
+
+          <div className="flex-grow-1 overflow-auto">
+            <CAccordion activeItemKey={activeAccordionItem}>
+              {trainedModelsReady ? <AccordionItems /> : <div className="pt-3 text-center">
+                <CSpinner color="primary" variant="grow" />
+              </div>}
+            </CAccordion>
           </div>
 
           <div className="row m-3">
@@ -419,8 +416,8 @@ const DatasetDashboard = () => {
               }}>Generate image</CButton>
             </div>
           </div>
-        </CCol>
-      </CRow>
+        </div>
+      </div>
 
       <CModal
         scrollable
@@ -583,7 +580,7 @@ const DatasetDashboard = () => {
           <CButton color="primary" onClick={() => deleteTraining(deleteTrainSessionName)}>Delete training</CButton>
         </CModalFooter>
       </CModal>
-    </div>
+    </>
 
   )
 }

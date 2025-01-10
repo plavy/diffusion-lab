@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
 import { getAuthHeader, getBackendURL } from "../../utils";
-import { CAlert, CButton, CForm, CFormInput, CSpinner } from "@coreui/react";
+import { CAlert, CButton, CContainer, CForm, CFormInput, CSpinner } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
 import { cilCheck, cilWarning } from "@coreui/icons";
 
@@ -18,7 +18,7 @@ const ServerDashboard = () => {
 
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
-    axios.get("http://localhost:8000/servers/" + id, {
+    axios.get(`${getBackendURL()}/servers/` + id, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -28,7 +28,7 @@ const ServerDashboard = () => {
   const [status, setStatus] = useState("");
   useEffect(() => {
     setStatus("");
-    axios.get(`http://localhost:8000/servers/${id}/status`, {
+    axios.get(`${getBackendURL()}/servers/${id}/status`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -56,7 +56,7 @@ const ServerDashboard = () => {
     setMetadata({
       ...metadata,
       [e.target.id]: e.target.value,
-  });
+    });
   };
 
   const handleSubmit = (e) => {
@@ -66,7 +66,7 @@ const ServerDashboard = () => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-    .then(res => { window.location.reload(); });
+      .then(res => { window.location.reload(); });
   };
 
   const [syncingVisible, setSyncingVisible] = useState(false);
@@ -91,60 +91,74 @@ const ServerDashboard = () => {
   }
 
   return (
-    <>
-      <h1>{metadata.name}</h1>
+    <div className="flex-grow-1 d-flex flex-row gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
 
-      {status ? (status.code == 0 ? <StatusSuccess /> : <StatusFail />) : <StatusChecking />}
+      <div className="d-flex flex-column rounded-4 p-3" style={{ flex: 3 }}>
 
-      <CForm onSubmit={handleSubmit}>
-        <CFormInput className="mb-3"
-          type="text"
-          id="name"
-          label="Display name"
-          value={metadata.name}
-          onChange={handleChange}
-        ></CFormInput>
-        <CFormInput className="mb-3"
-          type="text"
-          id="hostname"
-          label="Hostname"
-          value={metadata.hostname}
-          onChange={handleChange}
-        />
-        <CFormInput className="mb-3"
-          type="text"
-          id="port"
-          label="Port"
-          value={metadata.port}
-          onChange={handleChange}
-        />
-        <CFormInput className="mb-3"
-          type="text"
-          id="username"
-          label="Username"
-          value={metadata.username}
-          onChange={handleChange}
-        />
-        <CButton color="primary" type="submit">
-          Save
-        </CButton>
-      </CForm>
+        <h1>{metadata.name}</h1>
 
-      <div className="mt-2 flex-row gap-1">
-        <CButton type="submit" color="primary">
-          Reinstall environment
-        </CButton>
-        <CButton type="submit" color="primary" onClick={syncScripts}>
-          <CSpinner size="sm" className="me-1" hidden={!syncingVisible}/>
-          <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible}/>
-          Sync environment
-        </CButton>
-        <CButton type="submit" color="primary">
-          Clear cache
-        </CButton>
+        {status ? (status.code == 0 ? <StatusSuccess /> : <StatusFail />) : <StatusChecking />}
+
+        <CForm onSubmit={handleSubmit}>
+          <CFormInput className="mb-3"
+            type="text"
+            id="name"
+            floatingLabel="Display name"
+            value={metadata.name}
+            onChange={handleChange}
+          ></CFormInput>
+          <CFormInput className="mb-3"
+            type="text"
+            id="hostname"
+            floatingLabel="Hostname"
+            value={metadata.hostname}
+            onChange={handleChange}
+          />
+          <CFormInput className="mb-3"
+            type="text"
+            id="port"
+            floatingLabel="Port"
+            value={metadata.port}
+            onChange={handleChange}
+          />
+          <CFormInput className="mb-3"
+            type="text"
+            id="username"
+            floatingLabel="Username"
+            value={metadata.username}
+            onChange={handleChange}
+          />
+          <CButton color="primary" type="submit">
+            Update configuration
+          </CButton>
+        </CForm>
+
       </div>
+      <div className="d-flex flex-column" style={{ flex: 2 }}>
 
-    </>
+        <h2>Maintenance control</h2>
+        <CContainer className="bg-body rounded-4 p-3">
+          <div>Syncing will update or create Diffusion Lab files on the server without removing anything, and update Python environment. Dataset files are not affected by syncing.</div>
+          <CButton className="mt-2" type="submit" color="primary" onClick={syncScripts}>
+            <CSpinner size="sm" className="me-1" hidden={!syncingVisible} />
+            <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible} />
+            Sync environment
+          </CButton>
+        </CContainer>
+        <CContainer className="bg-body rounded-4 p-3 mt-3">
+          <div>Clearing cache will remove datasets, trained models, and all other Diffusion Lab files from the server, except the Python environment. Run sync to quickly install Diffusion Lab again.</div>
+          <CButton className="mt-2" type="submit" color="primary">
+            Clear cache
+          </CButton>
+        </CContainer>
+        <CContainer className="bg-body rounded-4 p-3 mt-3">
+          <div>Uninstalling will remove all Diffusion Lab files from the server. The server will also be removed from the dashboard.</div>
+          <CButton className="mt-2" type="submit" color="primary">
+            Uninstall environment
+          </CButton>
+        </CContainer>
+      </div>
+    </div>
   )
 }
 

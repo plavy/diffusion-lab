@@ -26,7 +26,6 @@ const NewServerModal = ({modalVisible, setModalVisible}) => {
             visible={modalVisible}
             onClose={() => setModalVisible(false)}
             aria-labelledby="NewServerModal"
-            size="lg"
         >
             <CModalHeader>
                 <CModalTitle id="NewServerModal">Add new server</CModalTitle>
