@@ -33,7 +33,8 @@ const AppBreadcrumb = () => {
 
   return (
     <CBreadcrumb className="my-0">
-      <CBreadcrumbItem href="/">Overview</CBreadcrumbItem>
+      {/* <CBreadcrumbItem href="/">Overview</CBreadcrumbItem> */}
+      <CBreadcrumbItem>Overview</CBreadcrumbItem>
       {breadcrumbs.map((breadcrumb, index) => {
         return (
           <CBreadcrumbItem

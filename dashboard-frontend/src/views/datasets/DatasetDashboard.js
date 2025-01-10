@@ -365,14 +365,14 @@ const DatasetDashboard = () => {
 
   return (
     <>
-      <div className="flex-grow-1 gap-3 d-flex flex-row" style={{ height: 0 }}>
+      <div className="w-100 flex-grow-1 d-flex flex-row gap-3" style={{ height: 0 }}>
 
         <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 3 }}>
 
           <h2>Dataset {metadata.name}</h2>
           <div>Author: {metadata.author}</div>
 
-          <CContainer className="flex-grow-1 mt-2 overflow-auto">
+          <CContainer className="flex-grow-1 mt-2 overflow-y-scroll">
             <CRow xs={{ cols: 2 }}>
               <ImagesTrain />
             </CRow>

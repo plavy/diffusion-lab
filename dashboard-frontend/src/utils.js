@@ -1,9 +1,8 @@
 import { Buffer } from "buffer";
-import axios from "axios";
 
 export function getDateTime() {
     const now = new Date();
-    
+
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
@@ -18,17 +17,35 @@ export function getBackendURL() {
     return import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 }
 
-export function getNextcloudSettings(name) {
+export function storeAuth(authDict) {
+    storeLocal('webdav-creds', authDict);
+}
+
+export function getAuth() {
+    return getLocal('webdav-creds');
+}
+
+export function isAuth() {
+    const auth = getAuth();
     try {
-        return JSON.parse(localStorage.getItem('nextcloud-settings'))[name];
-    } catch (e){
-        return "";
+        if (auth.url && auth.username && auth.password) {
+            return true;
+        } else {
+            return false;
+        }
+    } catch {
+        return false;
     }
 }
 
 export function getAuthHeader() {
-    const authHeader = Buffer.from(`${getNextcloudSettings("nextcloud-domain")}:${getNextcloudSettings("nextcloud-username")}:${getNextcloudSettings("nextcloud-password")}`).toString('base64');
-    return "Basic " + authHeader;
+    console.log('get auth header')
+    if (isAuth()) {
+        const authHeader = Buffer.from(`${getAuth().url}:${getAuth().username}:${getAuth().password}`).toString('base64');
+        return 'Basic ' + authHeader;
+    } else {
+        return '';
+    }
 }
 
 export function storeLocal(key, object) {
@@ -37,4 +54,10 @@ export function storeLocal(key, object) {
 
 export function getLocal(key) {
     return JSON.parse(localStorage.getItem(key));
+}
+
+export function logout() {
+    storeAuth({
+        url: getAuth().url
+    });
 }

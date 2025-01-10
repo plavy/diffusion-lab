@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   CContainer,
@@ -27,15 +27,16 @@ import {
 } from '@coreui/icons'
 
 import { AppBreadcrumb } from './index'
-import { getLocal, getNextcloudSettings, storeLocal } from '../utils'
+import { getLocal, getAuth, storeLocal, logout } from '../utils'
 
 const AppHeader = () => {
-  const headerRef = useRef()
-  const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
-  
+  const headerRef = useRef();
+  const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme');
+  const navigate = useNavigate();
+
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
-  
+
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
 
   useEffect(() => {
@@ -58,22 +59,16 @@ const AppHeader = () => {
   return (
     <CHeader position="sticky" className="p-0" ref={headerRef}>
       <CContainer className="border-bottom px-4" fluid>
+        <div>
+
         <CHeaderToggler
           onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
           style={{ marginInlineStart: '-14px' }}
-        >
+          >
           <CIcon icon={cilMenu} size="lg" />
         </CHeaderToggler>
-        <CHeaderNav className="d-none d-md-flex">
-          <CNavItem>
-            <CNavLink to="/" as={NavLink}>
-              Overview
-            </CNavLink>
-          </CNavItem>
-          <CNavItem>
-            <CNavLink to="/settings" as={NavLink}>Settings</CNavLink>
-          </CNavItem>
-        </CHeaderNav>
+        Diffusion Lab
+          </div>
         <CHeaderNav>
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle caret={false}>
@@ -117,21 +112,20 @@ const AppHeader = () => {
           </CDropdown>
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle className="pe-0" caret={false}>
-              {(getNextcloudSettings("nextcloud-username") && getNextcloudSettings("nextcloud-domain")) ?
-                (getNextcloudSettings("nextcloud-username") + '@' + getNextcloudSettings("nextcloud-domain")) : ""
+              {(getAuth()["username"] && getAuth()["url"]) ?
+                (getAuth().username + '@' + getAuth().url).split('/')[0] : "Not logged in"
               }
             </CDropdownToggle>
             <CDropdownMenu className="pt-0">
-              <CDropdownItem href="/logout">
+              <CDropdownItem href="#" onClick={() => {
+                logout();
+                window.location.reload();
+              }}>
                 <CIcon icon={cilAccountLogout} className="me-2" />
                 Log out
               </CDropdownItem>
               <CDropdownItem href="#">
-                <CIcon icon={cilUser} className="me-2" />
-                Profile
-              </CDropdownItem>
-              <CDropdownItem>
-                <CFormCheck label="Auto-refresh" checked={autoRefreshEnabled} onChange={handleAutoRefreshChange}></CFormCheck>
+                <CFormCheck id="auto-refresh-toggle" label="Auto-refresh" checked={autoRefreshEnabled} onChange={handleAutoRefreshChange}></CFormCheck>
               </CDropdownItem>
               <CDropdownItem href="#">
                 <CIcon icon={cilSettings} className="me-2" />

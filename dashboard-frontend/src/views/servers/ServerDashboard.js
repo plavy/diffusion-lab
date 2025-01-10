@@ -91,7 +91,7 @@ const ServerDashboard = () => {
   }
 
   return (
-    <div className="flex-grow-1 d-flex flex-row gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
+    <div className="w-100 flex-grow-1 d-flex flex-row gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
 
       <div className="d-flex flex-column rounded-4 p-3" style={{ flex: 3 }}>
 

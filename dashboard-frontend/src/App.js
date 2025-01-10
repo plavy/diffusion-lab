@@ -1,16 +1,16 @@
 import React, { Suspense, useEffect } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
 import { CSpinner, useColorModes } from '@coreui/react'
 import './scss/style.scss'
 
-// Containers
-const DefaultLayout = React.lazy(() => import('./layout/DefaultLayout'))
+import routes from './routes'
+import { AppSidebar, AppHeader } from './components/index'
+import { isAuth } from './utils'
 
-// Pages
-const Page404 = React.lazy(() => import('./views/errors/Page404'))
-const Page500 = React.lazy(() => import('./views/errors/Page500'))
+// Containers
+const Login = React.lazy(() => import('./views/login/Login'))
 
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes('coreui-free-react-admin-template-theme')
@@ -30,6 +30,22 @@ const App = () => {
     setColorMode(storedTheme)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const ProtectedElement = (element) => {
+    if (isAuth()) {
+      return <div>
+        <AppSidebar />
+        <div className="wrapper d-flex flex-column vh-100">
+          <AppHeader />
+          <div className="body flex-grow-1 w-100 d-flex flex-column justify-content-center align-items-center py-2" style={{ height: 0 }}>
+            <route.element />
+          </div>
+        </div>
+      </div>
+    } else {
+      return <Navigate to="/login" replace />
+    }
+  }
+
   return (
     <BrowserRouter>
       <Suspense
@@ -40,9 +56,40 @@ const App = () => {
         }
       >
         <Routes>
-          <Route exact path="/404" name="Page 404" element={<Page404 />} />
-          <Route exact path="/500" name="Page 500" element={<Page500 />} />
-          <Route path="*" name="Overview" element={<DefaultLayout />} />
+          <Route path='/login' element={
+            isAuth() ?
+              <Navigate to="/" replace />
+              :
+              <div className="body vh-100 w-100 d-flex flex-column justify-content-center align-items-center p-2" style={{ height: 0 }}>
+                <Login />
+              </div>
+          } />
+          {routes.map((route, idx) => {
+            return (
+              route.element && (
+                <Route
+                  key={idx}
+                  path={route.path}
+                  exact={route.exact}
+                  name={route.name}
+                  element={
+                    isAuth() ?
+                      <div>
+                        <AppSidebar />
+                        <div className="wrapper d-flex flex-column vh-100">
+                          <AppHeader />
+                          <div className="body flex-grow-1 w-100 d-flex flex-column justify-content-center align-items-center py-2" style={{ height: 0 }}>
+                            <route.element />
+                          </div>
+                        </div>
+                      </div>
+                      :
+                      <Navigate to="/login" replace />
+                  }
+                />
+              )
+            )
+          })}
         </Routes>
       </Suspense>
     </BrowserRouter>

@@ -1,7 +1,7 @@
 import { CAlert, CButton, CCol, CListGroup, CListGroupItem, CRow, CSpinner } from "@coreui/react"
 import NewServerModal from "../servers/NewServerModal"
 import { useEffect, useState } from "react";
-import { getAuthHeader, getBackendURL, getNextcloudSettings } from "../../utils";
+import { getAuthHeader, getBackendURL, getAuth } from "../../utils";
 import { cilCheck, cilWarning } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
@@ -17,11 +17,11 @@ const Overview = () => {
                 Authorization: getAuthHeader() // Encrypted by TLS
             }
         })
-            .then((res) => {setDavStatus(0);console.log("good")})
+            .then((res) => setDavStatus(0))
             .catch((res) => setDavStatus(1));
     }, []);
 
-    const domain = getNextcloudSettings("nextcloud-domain");
+    const domain = getAuth().url;
     const DavStatusChecking = () => (
         <div className="text-info">
             <CSpinner size="sm" /> Checking connection to {domain}...
