@@ -65,8 +65,6 @@ const Overview = () => {
   }, [serverList]);
 
   const ServerStatus = ({ serverId }) => {
-    console.log(serverStatus)
-    console.log('updating' + serverId)
     return (
       <>
         {serverStatus[serverId] != null ? (serverStatus[serverId].code == 0 ? <CIcon className="text-success" icon={cilCheck} />

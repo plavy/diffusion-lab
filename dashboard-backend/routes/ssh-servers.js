@@ -34,9 +34,28 @@ router.get('/', async (req, res) => {
   } catch (error) {
     res.status(500);
     res.send(error.message);
-    console.error('Error for /servers', ':', error.message);
+    console.error('Error for GET /servers', ':', error.message);
   }
 
+});
+
+// Add config of new SSH server
+router.post('/', async (req, res) => {
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const metadata = req.body;
+    const id = metadata.name
+      .replace(/[A-Z]/g, char => char.toLowerCase())
+      .replace(/[^a-z0-9]/g, '-');
+    metadata['id'] = id;
+    await dav.createDirectory(serverDir + id);
+    await dav.putFileContents(serverDir + id + "/" + metadataFile, JSON.stringify(metadata, null, 2));
+    res.json({ 'id': id });
+  } catch (error) {
+    res.status(500);
+    res.send(error.message);
+    console.error('Error for POST /servers', ':', error.message);
+  }
 });
 
 // Get config of SSH server
@@ -49,7 +68,7 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     res.status(500);
     res.send(error.message);
-    console.error('Error for /servers/:id for', id, ':', error.message);
+    console.error('Error for GET /servers/:id for', id, ':', error.message);
   }
 
 });
@@ -61,13 +80,15 @@ router.put('/:id', async (req, res) => {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const newMetadata = JSON.stringify(req.body, null, 2);
     await dav.putFileContents(serverDir + id + "/" + metadataFile, newMetadata);
-    res.json({ 'code': 0 })
+    res.json({ 'code': 0 });
   } catch (error) {
     res.status(500);
     res.send(error.message);
-    console.error('Error for /servers/:id for', id, ':', error.message);
+    console.error('Error for PUT /servers/:id for', id, ':', error.message);
   }
 });
+
+
 
 // Get status of SSH server
 router.get('/:id/status', async (req, res) => {

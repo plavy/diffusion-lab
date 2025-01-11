@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getLocal } from "../../utils";
+import { getAuthHeader, getBackendURL, getLocal, updateServerList } from "../../utils";
 import { CAlert, CButton, CContainer, CForm, CFormInput, CSpinner } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
 import { cilCheck, cilWarning } from "@coreui/icons";
+import { useDispatch } from "react-redux";
 
 const ServerDashboard = () => {
+  const dispatch = useDispatch();
 
   const { id } = useParams();
 
@@ -42,6 +44,7 @@ const ServerDashboard = () => {
 
   const [status, setStatus] = useState("");
   useEffect(() => {
+    updateServerList(dispatch);
     setStatus("");
     axios.get(`${getBackendURL()}/servers/${id}/status`, {
       headers: {
