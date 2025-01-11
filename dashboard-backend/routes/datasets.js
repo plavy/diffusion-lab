@@ -22,16 +22,13 @@ router.get('/', async (req, res) => {
                 .filter(file => file.type == 'directory')
                 .map(async file => {
                     const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
-                    return {
-                        id: metadata.id,
-                        name: metadata.name
-                    }
+                    return metadata;
                 }))
         res.json(datasets);
 
     } catch (error) {
         console.error('Error for /datasets:', error.message);
-        res.status(400);
+        res.status(500);
         res.send(error.message);
     }
 });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL } from "../../utils";
+import { getAuthHeader, getBackendURL, getLocal } from "../../utils";
 import { CAlert, CButton, CContainer, CForm, CFormInput, CSpinner } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
 import { cilCheck, cilWarning } from "@coreui/icons";
@@ -13,16 +13,31 @@ const ServerDashboard = () => {
 
   const [siteReady, setSiteReady] = useState(false);
   useEffect(() => {
-    setSiteReady(false)
+    setSiteReady(false);
   }, [id]);
 
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
-    axios.get(`${getBackendURL()}/servers/` + id, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
+    const getMetadata = () => {
+      axios.get(`${getBackendURL()}/servers/` + id, {
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        }
+      }).then((res) => { setMetadata(res.data); setSiteReady(true) });
+    }
+
+    try {
+      const filtered = getLocal('servers').filter(server => server.id == id);
+      if (filtered.length == 1) {
+        setMetadata(filtered[0]);
+        setSiteReady(true);
+        getMetadata();
+      } else {
+        throw new Error();
       }
-    }).then((res) => { setMetadata(res.data); setSiteReady(true) });
+    } catch {
+      getMetadata();
+    }
   }, [id]);
 
   const [status, setStatus] = useState("");
@@ -91,9 +106,9 @@ const ServerDashboard = () => {
   }
 
   return (
-    <div className="w-100 flex-grow-1 d-flex flex-row gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
+    <div className="flex-grow-1 d-flex flex-row gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
 
-      <div className="d-flex flex-column rounded-4 p-3" style={{ flex: 3 }}>
+      <div className="d-flex flex-column" style={{ flex: 3 }}>
 
         <h1>{metadata.name}</h1>
 

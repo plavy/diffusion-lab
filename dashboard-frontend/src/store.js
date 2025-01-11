@@ -3,6 +3,8 @@ import { legacy_createStore as createStore } from 'redux'
 const initialState = {
   sidebarShow: true,
   theme: 'light',
+  serverList: [],
+  datasetList: [],
 }
 
 const changeState = (state = initialState, { type, ...rest }) => {

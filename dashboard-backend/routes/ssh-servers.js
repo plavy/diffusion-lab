@@ -27,10 +27,7 @@ router.get('/', async (req, res) => {
                 .filter(file => file.type == 'directory')
                 .map(async file => {
                     const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
-                    return {
-                        id: metadata.id,
-                        name: metadata.name
-                    }
+                    return metadata;
                 }))
         res.json(servers);
 
@@ -70,8 +67,6 @@ router.put('/:id', async (req, res) => {
         res.send(error.message);
         console.error('Error for /servers/:id for', id, ':', error.message);
     }
-
-
 });
 
 // Get status of SSH server
@@ -95,6 +90,8 @@ router.get('/:id/status', async (req, res) => {
         }
 
     } catch (error) {
+        res.status(500);
+        res.send(error.message);
         console.error('Error for /servers/:id/status for', id, ':', error.message);
     }
 });

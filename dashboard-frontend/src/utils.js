@@ -1,3 +1,4 @@
+import axios from "axios";
 import { Buffer } from "buffer";
 
 export function getDateTime() {
@@ -39,7 +40,6 @@ export function isAuth() {
 }
 
 export function getAuthHeader() {
-    console.log('get auth header')
     if (isAuth()) {
         const authHeader = Buffer.from(`${getAuth().url}:${getAuth().username}:${getAuth().password}`).toString('base64');
         return 'Basic ' + authHeader;
@@ -60,4 +60,30 @@ export function logout() {
     storeAuth({
         url: getAuth().url
     });
+}
+
+export function updateDatasetList(dispatch) {
+    const datasets = getLocal('datasets');
+    if (datasets) {
+        dispatch({ type: 'set', datasetList: datasets });
+    }
+    axios.get(`${getBackendURL()}/datasets`, {
+        headers: {
+            Authorization: getAuthHeader() // Encrypted by TLS
+        }
+    })
+        .then((res) => { dispatch({ type: 'set', datasetList: res.data }); storeLocal('datasets', res.data) });
+}
+
+export function updateServerList(dispatch) {
+    const servers = getLocal('servers');
+    if (servers) {
+        dispatch({ type: 'set', serverList: servers });
+    }
+    axios.get(`${getBackendURL()}/servers`, {
+        headers: {
+            Authorization: getAuthHeader() // Encrypted by TLS
+        }
+    })
+        .then((res) => { dispatch({ type: 'set', serverList: res.data }); storeLocal('servers', res.data) });
 }

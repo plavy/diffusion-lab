@@ -60,7 +60,7 @@ const App = () => {
             isAuth() ?
               <Navigate to="/" replace />
               :
-              <div className="body vh-100 w-100 d-flex flex-column justify-content-center align-items-center p-2" style={{ height: 0 }}>
+              <div className="body vh-100 w-100 d-flex flex-column justify-content-center align-items-center p-3" style={{ height: 0 }}>
                 <Login />
               </div>
           } />
@@ -78,7 +78,7 @@ const App = () => {
                         <AppSidebar />
                         <div className="wrapper d-flex flex-column vh-100">
                           <AppHeader />
-                          <div className="body flex-grow-1 w-100 d-flex flex-column justify-content-center align-items-center py-2" style={{ height: 0 }}>
+                          <div className="body flex-grow-1 w-100 d-flex flex-column justify-content-center align-items-center p-3" style={{ height: 0 }}>
                             <route.element />
                           </div>
                         </div>

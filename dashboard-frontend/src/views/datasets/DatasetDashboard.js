@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
 import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
+import { useSelector, useDispatch } from 'react-redux';
 
 import {
   CButton,
@@ -30,11 +31,11 @@ import {
 
 
 const DatasetDashboard = () => {
+  const dispatch = useDispatch();
 
   const { id } = useParams();
 
   const [siteReady, setSiteReady] = useState(false);
-
 
   const [generateVisible, setGenerateVisible] = useState(false);
   const [generateFormVisible, setGenerateFormVisible] = useState(false);
@@ -53,7 +54,13 @@ const DatasetDashboard = () => {
   const [imageSrcList, setImageSrcList] = useState([]);
   const [generatedImageSrcList, setGeneratedImageSrcList] = useState([]);
 
-  const [serverList, setServerList] = useState([]);
+  const serverList = useSelector((state) => state.serverList);
+
+  useEffect(() => {
+    setSiteReady(false);
+    setTrainedModelsReady(false);
+  }, [id]);
+
   const setStartSSHServer = (servers) => {
     if (servers.length > 0) {
       const lastTrainServer = getLocal('last-train-server');
@@ -75,7 +82,7 @@ const DatasetDashboard = () => {
   useEffect(() => {
     const servers = getLocal('servers');
     if (servers) {
-      setServerList(servers);
+      dispatch({ type: 'set', serverList: servers });
       setStartSSHServer(servers);
     }
     axios.get(`${getBackendURL()}/servers`, {
@@ -84,25 +91,36 @@ const DatasetDashboard = () => {
       }
     })
       .then((res) => {
-        setServerList(res.data);
+        dispatch({ type: 'set', serverList: res.data });
         storeLocal('servers', res.data);
         setStartSSHServer(res.data);
       });
   }, []);
 
+  // Metadata
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
-    axios.get(`${getBackendURL()}/datasets/${id}`, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      }
-    }).then((res) => { setMetadata(res.data); setSiteReady(true); });
-  }, [id]);
+    const getMetadata = () => {
+      axios.get(`${getBackendURL()}/datasets/${id}`, {
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        }
+      }).then((res) => { setMetadata(res.data); setSiteReady(true); });
+    }
 
-  useEffect(() => {
-    setSiteReady(false);
-    setTrainedModelsReady(false);
-  }, [id])
+    try {
+      const filtered = getLocal('datasets').filter(dataset => dataset.id == id);
+      if (filtered.length == 1) {
+        setMetadata(filtered[0]);
+        setSiteReady(true);
+        getMetadata();
+      } else {
+        throw new Error();
+      }
+    } catch {
+      getMetadata();
+    }
+  }, [id]);
 
   useEffect(() => {
     setImageSrcList([]);
@@ -367,7 +385,7 @@ const DatasetDashboard = () => {
     <>
       <div className="w-100 flex-grow-1 d-flex flex-row gap-3" style={{ height: 0 }}>
 
-        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 3 }}>
+        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 3, minWidth: "450px" }}>
 
           <h2>Dataset {metadata.name}</h2>
           <div>Author: {metadata.author}</div>
@@ -379,17 +397,13 @@ const DatasetDashboard = () => {
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
 
-          <div className="row m-3">
-            <div className="col d-grid">
-              <CButton type="submit" color="primary" action="#">Add new image</CButton>
-            </div>
-            <div className="col d-grid">
-              <CButton type="submit" color="primary" action="#">Take a photo</CButton>
-            </div>
+          <div className="mt-3 d-flex flex-row gap-3">
+            <CButton type="submit" color="primary" action="#">Add new image</CButton>
+            <CButton type="submit" color="primary" action="#">Take a photo</CButton>
           </div>
         </div>
 
-        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2 }}>
+        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2, minWidth: "300px" }}>
           <h2>Trained models</h2>
 
           <div className="flex-grow-1 overflow-auto">
@@ -400,8 +414,7 @@ const DatasetDashboard = () => {
             </CAccordion>
           </div>
 
-          <div className="row m-3">
-            <div className="col d-grid">
+          <div className="d-flex flex-row gap-3 justify-content-center">
               <CButton color="primary" size='lg' onClick={() => {
                 setTrainFormData({
                   ...trainFormData,
@@ -409,12 +422,9 @@ const DatasetDashboard = () => {
                 });
                 setStartTrainVisible(true);
               }}>Train new model</CButton>
-            </div>
-            <div className="col d-grid">
               <CButton color="primary" size='lg' onClick={() => {
                 openGenerateModal();
               }}>Generate image</CButton>
-            </div>
           </div>
         </div>
       </div>
