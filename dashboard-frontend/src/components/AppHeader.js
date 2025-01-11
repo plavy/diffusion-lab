@@ -32,12 +32,10 @@ import { getLocal, getAuth, storeLocal, logout } from '../utils'
 const AppHeader = () => {
   const headerRef = useRef();
   const { colorMode, setColorMode } = useColorModes('coreui-free-react-admin-template-theme');
-  const navigate = useNavigate();
 
   const dispatch = useDispatch()
   const sidebarShow = useSelector((state) => state.sidebarShow)
-
-  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(false);
+  const autoRefresh = useSelector((state) => state.autoRefresh)
 
   useEffect(() => {
     document.addEventListener('scroll', () => {
@@ -46,14 +44,13 @@ const AppHeader = () => {
     })
     const are = getLocal("auto-refresh-enabled");
     if (are) {
-      setAutoRefreshEnabled(true);
+      dispatch({ type: 'set', autoRefresh: true })
     }
   }, [])
 
   const handleAutoRefreshChange = (e) => {
-    setAutoRefreshEnabled(e.target.checked);
+    dispatch({ type: 'set', autoRefresh: e.target.checked })
     storeLocal("auto-refresh-enabled", e.target.checked);
-    window.location.reload();
   }
 
   return (
@@ -125,7 +122,7 @@ const AppHeader = () => {
                 Log out
               </CDropdownItem>
               <CDropdownItem href="#">
-                <CFormCheck id="auto-refresh-toggle" label="Auto-refresh" checked={autoRefreshEnabled} onChange={handleAutoRefreshChange}></CFormCheck>
+                <CFormCheck id="auto-refresh-toggle" label="Auto-refresh" checked={autoRefresh} onChange={handleAutoRefreshChange}></CFormCheck>
               </CDropdownItem>
               <CDropdownItem href="#">
                 <CIcon icon={cilSettings} className="me-2" />

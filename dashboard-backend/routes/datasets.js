@@ -13,120 +13,120 @@ const metadataFile = 'metadata.json';
 
 // List datasets
 router.get('/', async (req, res) => {
-    try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
-        const response = await dav.getDirectoryContents(datasetDir);
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const response = await dav.getDirectoryContents(datasetDir);
 
-        const datasets = await Promise.all(
-            response
-                .filter(file => file.type == 'directory')
-                .map(async file => {
-                    const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
-                    return metadata;
-                }))
-        res.json(datasets);
+    const datasets = await Promise.all(
+      response
+        .filter(file => file.type == 'directory')
+        .map(async file => {
+          const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
+          return metadata;
+        }))
+    res.json(datasets);
 
-    } catch (error) {
-        console.error('Error for /datasets:', error.message);
-        res.status(500);
-        res.send(error.message);
-    }
+  } catch (error) {
+    console.error('Error for /datasets:', error.message);
+    res.status(500);
+    res.send(error.message);
+  }
 });
 
 // Get metadata of a dataset
 router.get('/:id', async (req, res) => {
-    const id = req.params.id;
-    try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
-        const metadata = JSON.parse(await dav.getFileContents(datasetDir + id + "/" + metadataFile, { format: "text" }));
-        res.json(metadata);
-    } catch (error) {
-        console.error('Error for /datasets/:id for', id, ':', error.message);
-    }
+  const id = req.params.id;
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const metadata = JSON.parse(await dav.getFileContents(datasetDir + id + "/" + metadataFile, { format: "text" }));
+    res.json(metadata);
+  } catch (error) {
+    console.error('Error for /datasets/:id for', id, ':', error.message);
+  }
 });
 
 // Get train images of a dataset
 router.get('/:id/images/train', async (req, res) => {
-    const id = req.params.id;
-    try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
-        const response = await dav.getDirectoryContents(datasetDir + id + '/' + trainingDir);
+  const id = req.params.id;
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const response = await dav.getDirectoryContents(datasetDir + id + '/' + trainingDir);
 
-        const files = response
-            .filter(file => file.type == 'file')
-            .map(file => file.basename);
-        res.json(files);
+    const files = response
+      .filter(file => file.type == 'file')
+      .map(file => file.basename);
+    res.json(files);
 
-    } catch (error) {
-        console.error('Error for /datasets/:id/images/train for', id, ':', error.message);
-    }
+  } catch (error) {
+    console.error('Error for /datasets/:id/images/train for', id, ':', error.message);
+  }
 });
 
 // Get a specific train image of a dataset
 router.get('/:id/images/train/:name', async (req, res) => {
-    const id = req.params.id;
-    const name = req.params.name;
-    try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
-        // const response = await dav.getFileContents(datasetDir + id + '/' + trainingDir + name, { format: "text" });
+  const id = req.params.id;
+  const name = req.params.name;
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    // const response = await dav.getFileContents(datasetDir + id + '/' + trainingDir + name, { format: "text" });
 
-        // const response = await getStream(req.auth.baseUrl + '/' + datasetDir + id + '/' + trainingDir + name, req.auth.username, req.auth.password);
-        // res.setHeader('Content-Type', response.headers['content-type']);
-        // response.data.pipe(res);
-        const readStream = dav.createReadStream(datasetDir + id + '/' + trainingDir + name)
-        readStream.on('error', (error) => {
-            res.status(error.status);
-            res.send(error.message);
-            console.error('Error for /datasets/:id/images/:name for', id, ':', error.message);    
-        })
-        readStream.pipe(res);
-    } catch (error) {
-        res.status(500);
-        res.send(error.message);
-        console.error('Error for /datasets/:id/images/:name for', id, ':', error.message);
-    }
+    // const response = await getStream(req.auth.baseUrl + '/' + datasetDir + id + '/' + trainingDir + name, req.auth.username, req.auth.password);
+    // res.setHeader('Content-Type', response.headers['content-type']);
+    // response.data.pipe(res);
+    const readStream = dav.createReadStream(datasetDir + id + '/' + trainingDir + name)
+    readStream.on('error', (error) => {
+      res.status(error.status);
+      res.send(error.message);
+      console.error('Error for /datasets/:id/images/:name for', id, ':', error.message);
+    })
+    readStream.pipe(res);
+  } catch (error) {
+    res.status(500);
+    res.send(error.message);
+    console.error('Error for /datasets/:id/images/:name for', id, ':', error.message);
+  }
 });
 
 // List trained and training models of a dataset
 router.get('/:id/models', async (req, res) => {
-    const id = req.params.id;
-    try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
-        const response = await dav.getDirectoryContents(trainedModelsDir + id);
+  const id = req.params.id;
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const response = await dav.getDirectoryContents(trainedModelsDir + id);
 
-        const models = await Promise.all(
-            response
-                .filter(file => file.type == 'directory')
-                .map(async file => {
-                    try {
+    const models = await Promise.all(
+      response
+        .filter(file => file.type == 'directory')
+        .map(async file => {
+          try {
 
-                        const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
-                        return metadata;
-                    } catch (error) {
-                        console.error('Error for /datasets/:id/models for', id, file.basename, error.message);
-                    }
-                }));
-        res.json(models.filter(model => model != null)); // Exclude models with errors
-    } catch (error) {
-        res.status(500);
-        res.json(error);
-        console.error('Error for /datasets/:id/models for', id, ':', error.message);
-    }
+            const metadata = JSON.parse(await dav.getFileContents(file.filename + "/" + metadataFile, { format: "text" }));
+            return metadata;
+          } catch (error) {
+            console.error('Error for /datasets/:id/models for', id, file.basename, error.message);
+          }
+        }));
+    res.json(models.filter(model => model != null)); // Exclude models with errors
+  } catch (error) {
+    res.status(500);
+    res.json(error);
+    console.error('Error for /datasets/:id/models for', id, ':', error.message);
+  }
 });
 
 // Delete a trained model of a dataset
 router.delete('/:id/models/:sessionName', async (req, res) => {
-    const id = req.params.id;
-    const sessionName = req.params.sessionName;
-    try {
-        const dav = DAVClient(req.auth.baseUrl, req.auth)
-        const response = await dav.deleteFile(trainedModelsDir + id + '/' + sessionName);
-        res.json({ code: 0 });
-    } catch (error) {
-        res.status(500);
-        res.json({ code: 1 });
-        console.error('Error for /datasets/:id/models/:sessionName for', id, sessionName, ':', error.message);
-    }
+  const id = req.params.id;
+  const sessionName = req.params.sessionName;
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const response = await dav.deleteFile(trainedModelsDir + id + '/' + sessionName);
+    res.json({ code: 0 });
+  } catch (error) {
+    res.status(500);
+    res.json({ code: 1 });
+    console.error('Error for /datasets/:id/models/:sessionName for', id, sessionName, ':', error.message);
+  }
 });
 
 module.exports = router;

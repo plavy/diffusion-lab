@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
+import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal, updateDatasetList, updateServerList } from "../../utils";
 import { useSelector, useDispatch } from 'react-redux';
 
 import {
@@ -54,7 +54,11 @@ const DatasetDashboard = () => {
   const [imageSrcList, setImageSrcList] = useState([]);
   const [generatedImageSrcList, setGeneratedImageSrcList] = useState([]);
 
+  const autoRefresh = useSelector((state) => state.autoRefresh)
   const serverList = useSelector((state) => state.serverList);
+  const theme = useSelector((state) => state.theme);
+
+  console.log(theme);
 
   useEffect(() => {
     setSiteReady(false);
@@ -156,13 +160,13 @@ const DatasetDashboard = () => {
 
   // Get trained models
   useEffect(() => {
-    if (getLocal("auto-refresh-enabled")) {
+    if (autoRefresh) {
       const interval = setInterval(() => {
         getTrainedModels();
       }, 2000);
       return () => clearInterval(interval);
     }
-  }, [])
+  }, [autoRefresh])
   useEffect(() => {
     getTrainedModels();
   }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible]);
@@ -187,7 +191,7 @@ const DatasetDashboard = () => {
             }
           }
         })
-      }, 500);
+      }, 1000);
       return () => {
         updateProgress = false;
         clearInterval(interval);
@@ -260,7 +264,7 @@ const DatasetDashboard = () => {
   const ImagesTrain = () => {
     let images = []
     for (let imageSrc of imageSrcList) {
-      images.push(<CCol className="p-1" key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
+      images.push(<CCol className="p-1 position-relative" key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
     }
     return images;
   }
@@ -268,11 +272,14 @@ const DatasetDashboard = () => {
   const ImagesGenerate = () => {
     let images = [];
     for (let i in generatedImageSrcList) {
-      if (generatedImageSrcList[i]) {
+      if (generatedImageSrcList[i] && false) {
         images.push(<CCol className="p-1" key={i}><CImage className="w-100" fluid src={generatedImageSrcList[i]} /></CCol>)
       } else {
-        images.push(<CCol className="p-1" key={i}>
-          <CProgress className="w-100 h-100 ratio ratio-1x1" variant="striped" animated value={generateProgress} />
+        images.push(<CCol className="position-relative p-1" key={i}>
+          <CProgress className="w-100 h-100 ratio ratio-1x1 bg-transparent" value={generateProgress} />
+          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" color={theme}  animation="wave">
+            <CPlaceholder className="w-100 h-100 rounded-2"></CPlaceholder>
+          </CPlaceholder>
         </CCol>)
       }
     }
@@ -415,16 +422,16 @@ const DatasetDashboard = () => {
           </div>
 
           <div className="d-flex flex-row gap-3 justify-content-center">
-              <CButton color="primary" size='lg' onClick={() => {
-                setTrainFormData({
-                  ...trainFormData,
-                  ["sessionName"]: `model-${getDateTime()}`,
-                });
-                setStartTrainVisible(true);
-              }}>Train new model</CButton>
-              <CButton color="primary" size='lg' onClick={() => {
-                openGenerateModal();
-              }}>Generate image</CButton>
+            <CButton color="primary" size='lg' onClick={() => {
+              setTrainFormData({
+                ...trainFormData,
+                ["sessionName"]: `model-${getDateTime()}`,
+              });
+              setStartTrainVisible(true);
+            }}>Train new model</CButton>
+            <CButton color="primary" size='lg' onClick={() => {
+              openGenerateModal();
+            }}>Generate image</CButton>
           </div>
         </div>
       </div>

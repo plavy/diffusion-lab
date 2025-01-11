@@ -20,20 +20,28 @@ import { AppSidebarNav } from './AppSidebarNav'
 import { logo } from 'src/assets/brand/logo'
 import { sygnet } from 'src/assets/brand/sygnet'
 
-import { getAuthHeader, getBackendURL, getLocal, storeLocal, updateDatasetList, updateServerList } from "../utils";
+import { updateDatasetList, updateServerList } from "../utils";
 
 const AppSidebar = () => {
   const dispatch = useDispatch();
+  const autoRefresh = useSelector((state) => state.autoRefresh);
 
   const datasetList = useSelector((state) => state.datasetList);
-  useEffect(() => {
-    updateDatasetList(dispatch);
-  }, []);
-
   const serverList = useSelector((state) => state.serverList);
   useEffect(() => {
+    updateDatasetList(dispatch);
     updateServerList(dispatch);
   }, []);
+
+  useEffect(() => {
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        updateDatasetList(dispatch);
+        updateServerList(dispatch);
+      }, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh])
 
   let navigation = [
     {

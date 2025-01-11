@@ -1,7 +1,7 @@
 import { CAlert, CButton, CCol, CListGroup, CListGroupItem, CRow, CSpinner } from "@coreui/react"
 import NewServerModal from "../servers/NewServerModal"
 import { useEffect, useState } from "react";
-import { getAuthHeader, getBackendURL, getAuth, updateServerList } from "../../utils";
+import { getAuthHeader, getBackendURL, getAuth, updateServerList, updateDatasetList } from "../../utils";
 import { cilCheck, cilWarning } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
@@ -13,7 +13,7 @@ const Overview = () => {
   const [newServerModalVisible, setNewServerModalVisible] = useState(false);
 
   const [davStatus, setDavStatus] = useState(null);
-  useEffect(() => {
+  const updateDavStatus = () => {
     setDavStatus(null);
     axios.get(`${getBackendURL()}/servers`, {
       headers: {
@@ -22,44 +22,54 @@ const Overview = () => {
     })
       .then((res) => setDavStatus(0))
       .catch((res) => setDavStatus(1));
-  }, []);
+  }
 
   const domain = getAuth().url;
-  const DavStatusChecking = () => (
-    <div className="text-info">
-      <CSpinner size="sm" /> Checking connection to {domain}...
-    </div>
-  )
-  const DavStatusSuccess = () => (
-    <div className="text-success">
-      <CIcon icon={cilCheck} /> Connected to {domain}
-    </div>
-  )
-  const DavStatusFail = () => (
-    <div className="text-danger">
-      <CIcon icon={cilWarning} /> Unable to connect to {domain}
-    </div>
+  const DavStatus = () => (
+    davStatus != null ? (davStatus == 0 ?
+      <div className="text-success">
+        <CIcon icon={cilCheck} /> Connected to {domain}
+      </div> :
+      <div className="text-danger">
+        <CIcon icon={cilWarning} /> Unable to connect to {domain}
+      </div>)
+      : <div className="text-info">
+        <CSpinner size="sm" /> Checking connection to {domain}...
+      </div>
   )
 
+  const datasetList = useSelector((state) => state.datasetList);
   const serverList = useSelector((state) => state.serverList);
+
   useEffect(() => {
+    updateDavStatus();
+    updateDatasetList(dispatch);
     updateServerList(dispatch);
   }, []);
 
+  const [serverStatus, setServerStatus] = useState({});
+  const [lastCall, setLastCall] = useState(0);
+  useEffect(() => {
+    const now = new Date().getTime();
+    if (now - lastCall >= 10000) {
+      setLastCall(now);
+      for (const server of serverList) {        
+        axios.get(`${getBackendURL()}/servers/${server.id}/status`, {
+          headers: {
+            Authorization: getAuthHeader() // Encrypted by TLS
+          }
+        }).then((res) => {
+          setServerStatus(prev => ({...prev, [server.id]: res.data}))});
+      }
+    }
+  }, [serverList]);
+
   const ServerStatus = ({ serverId }) => {
-    const [status, setStatus] = useState(null);
-    console.log(serverId);
-    useEffect(() => {
-      console.log
-      axios.get(`${getBackendURL()}/servers/${serverId}/status`, {
-        headers: {
-          Authorization: getAuthHeader() // Encrypted by TLS
-        }
-      }).then((res) => { setStatus(res.data); console.log(res.data) });
-    }, []);
+    console.log(serverStatus)
+    console.log('updating' + serverId)
     return (
       <>
-        {status != null ? (status.code == 0 ? <CIcon className="text-success" icon={cilCheck} />
+        {serverStatus[serverId] != null ? (serverStatus[serverId].code == 0 ? <CIcon className="text-success" icon={cilCheck} />
           : <CIcon className="text-danger" icon={cilWarning} />) : <CSpinner className="text-info" size="sm" />}
       </>
     )
@@ -73,8 +83,8 @@ const Overview = () => {
 
         <div className="bg-body rounded-4 p-3">
           <h2>Status</h2>
-          {davStatus != null ? (davStatus == 0 ? <DavStatusSuccess /> : <DavStatusFail />) : <DavStatusChecking />}
-          <div>2 datasets</div>
+          <DavStatus />
+          <div>{datasetList.length} datasets</div>
           <CButton color="primary mt-3">Add new dataset</CButton>
         </div>
 
@@ -84,8 +94,8 @@ const Overview = () => {
             <h2>Servers</h2>
             <CListGroup className="flex-grow-1 overflow-auto">
               {serverList.map(server =>
-                <CListGroupItem key={server.id}>
-                  <div className="d-flex flex-row gap-1 align-items-center">
+                <CListGroupItem key={server.id} as="a" href={`/servers/${server.id}`}>
+                  <div className="d-flex flex-row gap-1 align-items-center justify-content-between">
                     <h5 className="mb-1">{server.name}</h5>
                     <ServerStatus serverId={server.id} />
                   </div>
@@ -103,6 +113,7 @@ const Overview = () => {
                 <div className="d-flex w-100 justify-content-between">
                   <h5 className="mb-1">model-2</h5>
                 </div>
+                <small>Maps</small>
               </CListGroupItem>
             </CListGroup>
           </div>
