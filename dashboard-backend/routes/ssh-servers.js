@@ -88,7 +88,19 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-
+// Remove config of SSH server
+router.delete('/:id', async (req, res) => {
+  const id = req.params.id;
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    await dav.deleteFile(serverDir + id);
+    res.json({ 'code': 0 });
+  } catch (error) {
+    res.status(500);
+    res.send(error.message);
+    console.error('Error for DELETE /servers/:id for', id, ':', error.message);
+  }
+});
 
 // Get status of SSH server
 router.get('/:id/status', async (req, res) => {

@@ -1,26 +1,27 @@
 import { CButton, CForm, CFormInput, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react"
 import axios from "axios";
 import { getAuthHeader, getBackendURL, updateServerList } from "../../utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import LoadingButton from "../../components/LoadingButton";
 
 
 const NewServerModal = ({ modalVisible, setModalVisible }) => {
-  const [watingResponse, setWaitingRespone] = useState(false);
   const [formData, setFormData] = useState({
     "name": "",
     "hostname": "",
     "port": "",
     "username": "",
   });
-
+  
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.id]: e.target.value,
-  });
+    });
   };
-
+  
+  const [watingResponse, setWaitingRespone] = useState(false);
   const navigate = useNavigate();
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -32,6 +33,12 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
     })
       .then(res => { navigate(`/servers/${res.data.id}`) });
   };
+
+  useEffect(() => {
+    if (! modalVisible) {
+      setWaitingRespone(false);
+    }
+  }, [modalVisible]);
 
   return (
 
@@ -79,8 +86,9 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
       </CModalBody>
       <CModalFooter>
         <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancel</CButton>
-        <CButton color="primary" type="submit" disabled={watingResponse} onClick={handleSubmit}>
-          {watingResponse ? <CSpinner className="me-1" size="sm" /> : null}Add new server</CButton>
+        <LoadingButton color="primary" type="submit" loadingVisible={watingResponse} onClick={handleSubmit}>
+        Add new server
+        </LoadingButton>
       </CModalFooter>
     </CModal>
   )

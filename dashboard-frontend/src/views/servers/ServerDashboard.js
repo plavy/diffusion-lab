@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
 import { getAuthHeader, getBackendURL, getLocal, updateServerList } from "../../utils";
@@ -7,6 +7,7 @@ import { CAlert, CButton, CContainer, CForm, CFormInput, CSpinner } from "@coreu
 import CIcon from "@coreui/icons-react";
 import { cilCheck, cilWarning } from "@coreui/icons";
 import { useDispatch } from "react-redux";
+import LoadingButton from "../../components/LoadingButton";
 
 const ServerDashboard = () => {
   const dispatch = useDispatch();
@@ -90,10 +91,10 @@ const ServerDashboard = () => {
   const [syncingVisible, setSyncingVisible] = useState(false);
   const [syncingSuccessVisible, setSyncingSuccessVisible] = useState(false);
 
-  const syncScripts = async (e) => {
+  const syncScripts = async () => {
     setSyncingSuccessVisible(false);
     setSyncingVisible(true);
-    await axios.post(`http://localhost:8000/servers/${id}/sync`, null, {
+    await axios.post(`${getBackendURL()}/servers/${id}/sync`, null, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -101,6 +102,18 @@ const ServerDashboard = () => {
     setSyncingVisible(false);
     setSyncingSuccessVisible(true);
   };
+
+  const navigate = useNavigate();
+  const [removeLoading, setRemoveLoading] = useState(false);
+  const removeServer = async () => {
+    setRemoveLoading(true);
+    await axios.delete(`${getBackendURL()}/servers/${id}`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    });
+    navigate('/');
+  }
 
   if (!siteReady) {
     return (<div className="pt-3 text-center">
@@ -157,7 +170,7 @@ const ServerDashboard = () => {
         <h2>Maintenance control</h2>
         <CContainer className="bg-body rounded-4 p-3">
           <div>Syncing will update or create Diffusion Lab files on the server without removing anything, and update Python environment. Dataset files are not affected by syncing.</div>
-          <CButton className="mt-2" type="submit" color="primary" onClick={syncScripts}>
+          <CButton className="mt-2" type="submit" color="primary" onClick={() => syncScripts()}>
             <CSpinner size="sm" className="me-1" hidden={!syncingVisible} />
             <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible} />
             Sync environment
@@ -171,9 +184,9 @@ const ServerDashboard = () => {
         </CContainer>
         <CContainer className="bg-body rounded-4 p-3 mt-3">
           <div>Uninstalling will remove all Diffusion Lab files from the server. The server will also be removed from the dashboard.</div>
-          <CButton className="mt-2" type="submit" color="primary">
+          <LoadingButton className="mt-2" loadingVisible={removeLoading} type="submit" color="primary" onClick={() => removeServer()}>
             Uninstall environment
-          </CButton>
+          </LoadingButton>
         </CContainer>
       </div>
     </div>
