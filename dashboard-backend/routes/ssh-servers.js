@@ -1,18 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const getAuth = require('../utils').getAuth;
-const getFileContent = require('../utils').getFileContent;
 
 const DAVClient = require('webdav').createClient;
 const pLimit = require('p-limit');
 
 const SSH2Promise = require('ssh2-promise');
 const SCPClient = require('node-scp').Client;
-const { toSSHConfig } = require('../utils');
+const { toSSHConfig, ensureVariable } = require('../utils');
 
 const serverDir = 'diffusion-lab/ssh-servers/';
 const metadataFile = 'metadata.json';
-const scriptsDir = 'diffusion-lab/scripts/'
+const scriptsDir = 'diffusion-lab/scripts/';
 const datasetDir = 'diffusion-lab/datasets/';
 const trainedModelsDir = 'diffusion-lab/trained-models/';
 const samplesDir = '/tmp/samples';
@@ -157,7 +155,7 @@ router.post('/:id/sync', async (req, res) => {
       console.timeEnd('syncServer');
       scp.close();
     } catch (e) {
-      console.error(e);
+      console.error('Error for /servers/:id/sync for', id, ':', error.message);
     }
 
     console.time('runSetup');
@@ -165,19 +163,19 @@ router.post('/:id/sync', async (req, res) => {
     console.timeEnd('runSetup');
     res.json({ code: 0 });
     ssh.close();
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
     res.json({ code: 1 });
+    console.error('Error for /servers/:id/sync for', id, ':', error.message);
   }
 
 });
 
 // Start training on SSH server
-router.post('/:id/train/:dsId', async (req, res) => {
+router.post('/:id/train', async (req, res) => {
   const id = req.params.id;
-  const datasetId = req.params.dsId;
   try {
-    const sessionName = req.body.sessionName;
+    const datasetId = ensureVariable("Dataset", req.body.dataset);
+    const sessionName = ensureVariable("Session name", req.body.sessionName);
     const cwd = `${trainedModelsDir}/${datasetId}/${sessionName}`
 
     const dav = DAVClient(req.auth.baseUrl, req.auth);
@@ -191,21 +189,20 @@ router.post('/:id/train/:dsId', async (req, res) => {
     scp.close();
 
     const command = `tmux new-session -d -s ${sessionName} "source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/train.py \
-            --dav-url '${auth.baseUrl}' \
-            --dav-username '${auth.username}' \
-            --dav-password '${auth.password}' \
+            --dav-url '${req.auth.baseUrl}' \
+            --dav-username '${req.auth.username}' \
+            --dav-password '${req.auth.password}' \
             --dataset-dir '${datasetDir}/${datasetId}' \
             --training-dir '${cwd}' \
             --metadata-file '${cwd}/${metadataFile}' \
-            ; sleep 60";`;
+            ; sleep 60";`;  
     const response2 = await ssh.exec(command);
     ssh.close();
 
     res.json(response2);
-  } catch (e) {
-    res.status(500);
-    res.json(e);
-    console.error(e);
+  } catch (error) {
+    res.status(400).send(error.message);
+    console.error('Error for /servers/:id/train for', id, ':', error.message);
   }
 });
 
@@ -220,11 +217,38 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
     const response2 = await ssh.exec(`tmux kill-session -t ${sessionName}`);
     ssh.close();
     res.json(response2);
-  } catch (e) {
+  } catch (error) {
     res.status(500);
-    res.json(e);
-    console.error(e);
+    res.json(error);
+    console.error('Error for /servers/:id/train/:sessionName for', id, ':', error.message);
   }
+});
+
+router.get('/:id/train/:sessionName/logs', async (req, res) => {
+  const id = req.params.id;
+  const sessionName = req.params.sessionName;
+  try {
+
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+    const ssh = new SSH2Promise(sshConfig);
+    const {stdout, stderr} = await ssh.exec(`tmux attach-session -t ${sessionName}`, {stream: 'both'});
+
+    stdout.on('data', (data) => {
+      console.log(`[TMUX STDOUT] ${data}`);
+    });
+    stderr.on('data', (data) => {
+      console.log(`[TMUX STDERR] ${data}`);
+    });
+
+    ssh.close();
+    res.json({code: 0});
+  } catch (error) {
+    res.status(500);
+    res.json(error);
+    console.error('Error for /servers/:id/train/:sessionName/logs for', id, ':', error.message);
+  }
+
 });
 
 // Generate images
@@ -249,10 +273,10 @@ router.post('/:id/generate/:name', async (req, res) => {
     ssh.close();
 
     res.json({ code: 0 });
-  } catch (e) {
+  } catch (error) {
     res.status(500);
-    res.json(e);
-    console.error(e);
+    res.json(error);
+    console.error('Error for /servers/:id/generate/:name for', id, ':', error.message);
   }
 });
 
@@ -271,10 +295,10 @@ router.get('/:id/generate/:name/image/:number', async (req, res) => {
     res.setHeader('Content-Type', 'image/jpeg');
     res.send(file);
     scp.close();
-  } catch (e) {
+  } catch (error) {
     res.status(500);
-    res.json(e);
-    console.error(e);
+    res.json(error);
+    console.error('Error for /servers/:id/generate/:name/image/:number for', id, ':', error.message);
   }
 });
 
@@ -291,13 +315,13 @@ router.get('/:id/generate/:name/progress', async (req, res) => {
     const file = await scp.readFile(`${samplesDir}/${name}-progress.txt`);
     res.send(file);
     scp.close();
-  } catch (e) {
-    if (e.code == 2) {
+  } catch (error) {
+    if (error.code == 2) {
       res.send("0");
     } else {
       res.status(500);
-      res.json(e);
-      console.error(e);
+      res.json(error);
+      console.error('Error for /servers/:id/generate/:name/progress for', id, ':', error.message);
     }
   }
 });

@@ -18,13 +18,11 @@ const Login = () => {
         });
     };
 
-    const navigate = useNavigate();
     const handleSubmit = (e) => {
         e.preventDefault();
         storeAuth(formData);
         window.location.reload();
     };
-
 
     return (
         <div className="w-100 bg-body rounded-4 p-3" style={{ maxWidth: "600px" }}>

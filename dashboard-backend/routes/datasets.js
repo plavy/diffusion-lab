@@ -1,7 +1,5 @@
 const express = require('express');
 const router = express.Router();
-const { getStream } = require('../utils');
-const getAuth = require('../utils').getAuth;
 const DAVClient = require('webdav').createClient;
 
 const datasetDir = 'diffusion-lab/datasets/';

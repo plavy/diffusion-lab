@@ -28,6 +28,9 @@ import {
   CProgress,
   CPlaceholder
 } from "@coreui/react";
+import LoadingButton from "../../components/LoadingButton";
+import StartTrainModal from "../sessions/StartTrainModal";
+import StopTrainModal from "../sessions/StopTrainModal";
 
 
 const DatasetDashboard = () => {
@@ -47,6 +50,9 @@ const DatasetDashboard = () => {
   const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
   const [deleteTrainSessionName, setDeleteTrainSessionName] = useState(null);
 
+  const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedServer, setSelectedServer] = useState(null);
+
   const [trainedModels, setTrainedModels] = useState([]);
   const [trainedModelsReady, setTrainedModelsReady] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState(null);
@@ -56,50 +62,30 @@ const DatasetDashboard = () => {
 
   const autoRefresh = useSelector((state) => state.autoRefresh)
   const serverList = useSelector((state) => state.serverList);
-  const theme = useSelector((state) => state.theme);
 
-  console.log(theme);
-
-  useEffect(() => {
-    setSiteReady(false);
-    setTrainedModelsReady(false);
-  }, [id]);
-
-  const setStartSSHServer = (servers) => {
-    if (servers.length > 0) {
-      const lastTrainServer = getLocal('last-train-server');
-      if (lastTrainServer && servers.some(server => server.id === lastTrainServer)) {
-        setTrainFormData({
-          ...trainFormData,
-          ["sessionName"]: `model-${getDateTime()}`,
-          ["sshServer"]: lastTrainServer,
-        });
-      } else {
-        setTrainFormData({
-          ...trainFormData,
-          ["sessionName"]: `model-${getDateTime()}`,
-          ["sshServer"]: servers[0].id,
-        });
-      }
-    }
-  }
+  
   useEffect(() => {
     const servers = getLocal('servers');
     if (servers) {
       dispatch({ type: 'set', serverList: servers });
-      setStartSSHServer(servers);
+      // setStartSSHServer(servers);
     }
     axios.get(`${getBackendURL()}/servers`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then((res) => {
-        dispatch({ type: 'set', serverList: res.data });
-        storeLocal('servers', res.data);
-        setStartSSHServer(res.data);
-      });
+    .then((res) => {
+      dispatch({ type: 'set', serverList: res.data });
+      storeLocal('servers', res.data);
+      // setStartSSHServer(res.data);
+    });
   }, []);
+
+  useEffect(() => {
+    setSiteReady(false);
+    setTrainedModelsReady(false);
+  }, [id]);
 
   // Metadata
   const [metadata, setMetadata] = useState("");
@@ -220,9 +206,13 @@ const DatasetDashboard = () => {
               <br />
               SSH server: {model.sshServer}
               <br />
-              <CButton type="submit" color="primary">Logs</CButton>
+              <CButton type="submit" color="primary" onClick={() => {
+                setSelectedSession(model.sessionName);
+                startLogs();
+              }}>Logs</CButton>
               <CButton type="submit" color="primary" className="ms-2" onClick={() => {
-                setStopTrainSessionName(model.sessionName);
+                setSelectedSession(model.sessionName);
+                setSelectedServer(model.sshServer);
                 setStopTrainVisible(true);
               }}>Stop training</CButton>
             </CAccordionBody>
@@ -272,12 +262,12 @@ const DatasetDashboard = () => {
   const ImagesGenerate = () => {
     let images = [];
     for (let i in generatedImageSrcList) {
-      if (generatedImageSrcList[i] && false) {
+      if (generatedImageSrcList[i]) {
         images.push(<CCol className="p-1" key={i}><CImage className="w-100" fluid src={generatedImageSrcList[i]} /></CCol>)
       } else {
         images.push(<CCol className="position-relative p-1" key={i}>
           <CProgress className="w-100 h-100 ratio ratio-1x1 bg-transparent" value={generateProgress} />
-          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" color={theme}  animation="wave">
+          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" color="dark"  animation="wave">
             <CPlaceholder className="w-100 h-100 rounded-2"></CPlaceholder>
           </CPlaceholder>
         </CCol>)
@@ -310,14 +300,6 @@ const DatasetDashboard = () => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     }).then(res => { setStartTrainVisible(false) });
-  }
-
-  const stopTraining = async (sessionName) => {
-    axios.delete(`http://localhost:8000/servers/${selectedServer}/train/${sessionName}`, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      }
-    }).then(res => { setStopTrainVisible(false) });
   }
 
   const deleteTraining = async (sessionName) => {
@@ -381,6 +363,14 @@ const DatasetDashboard = () => {
     setGenerateProgressRequestParam(timestamp);
   }
 
+  const startLogs = () => {
+    axios.get(`${getBackendURL()}/datasets/${id}/models/${selectedSession}/logs`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then(res => { });
+  }
+
   // Site not ready
   if (!siteReady) {
     return (<div className="pt-3 text-center">
@@ -436,77 +426,7 @@ const DatasetDashboard = () => {
         </div>
       </div>
 
-      <CModal
-        scrollable
-        visible={startTrainVisible}
-        onClose={() => setStartTrainVisible(false)}
-        aria-labelledby="TrainModal"
-        size="lg"
-      >
-        <CModalHeader>
-          <CModalTitle id="TrainModal">Train</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <CForm id="trainConfig">
-            <CFormSelect
-              id="preprocessing"
-              floatingLabel="Preprocessing"
-              options={[
-                { label: 'One', value: '1' },
-                { label: 'Two', value: '2' },
-                { label: 'Three', value: '3' }
-              ]}
-              onChange={handleTrainChange}
-            />
-            <CFormSelect className="mt-2"
-              id="model"
-              floatingLabel="Model"
-              options={[
-                { label: 'Pixel diffusion', value: '1' },
-                { label: 'Latent diffusion', value: '2' },
-              ]}
-              onChange={handleTrainChange}
-            />
-            <CFormInput className="mt-2"
-              id="hyperparameter:learningRate"
-              type="text"
-              floatingLabel="Learning rate"
-              value={trainFormData["hyperparameter:learningRate"]}
-              onChange={handleTrainChange}
-            />
-            <CFormInput className="mt-2"
-              id="hyperparameter:maxSteps"
-              type="text"
-              floatingLabel="Max steps"
-              value={trainFormData["hyperparameter:maxSteps"]}
-              onChange={handleTrainChange}
-            />
-            <CFormInput className="mt-2"
-              id="sessionName"
-              type="text"
-              floatingLabel="Session name"
-              value={trainFormData["sessionName"]}
-              onChange={handleTrainChange}
-            />
-            <CFormSelect className="mt-2"
-              id="sshServer"
-              floatingLabel="SSH server"
-              options={serverList.map(server => ({
-                label: server.name,
-                value: server.id
-              }))}
-              value={trainFormData["sshServer"]}
-              onChange={handleTrainChange}
-            />
-
-          </CForm>
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setStartTrainVisible(false)}>Cancel</CButton>
-          <CButton color="primary" type="submit" onClick={handleTrainSubmit}>Start training</CButton>
-        </CModalFooter>
-      </CModal>
-
+      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} datasetId={id}/>
 
       <CModal
         scrollable
@@ -562,23 +482,7 @@ const DatasetDashboard = () => {
         </CModalFooter>
       </CModal>
 
-      <CModal
-        scrollable
-        visible={stopTrainVisible}
-        onClose={() => setStopTrainVisible(false)}
-        aria-labelledby="StopTrainModal"
-      >
-        <CModalHeader>
-          <CModalTitle id="StopTrainModal">Stop training</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <p>Are you sure you want to stop training {stopTrainSessionName}?</p>
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setStopTrainVisible(false)}>Cancel</CButton>
-          <CButton color="primary" onClick={() => stopTraining(stopTrainSessionName)}>Stop training</CButton>
-        </CModalFooter>
-      </CModal>
+      <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} sessionName={selectedSession} server={selectedServer}/>
 
       <CModal
         scrollable
