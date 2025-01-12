@@ -18,6 +18,7 @@ from skimage import io
 
 from DiffusionFastForward.src import PixelDiffusion
 from DiffusionFastForward.src import EMA
+from DiffusionFastForward.src import ProgressUpdater
 
 from kornia.utils import image_to_tensor
 import kornia.augmentation as KA
@@ -49,7 +50,7 @@ class SimpleImageDataset(Dataset):
                 *self.transforms,
                 data_keys=data_keys,
                 same_on_batch=False
-            )   
+            )
         
         # check files
         supported_formats=['webp','jpg']
@@ -154,7 +155,7 @@ def train(args):
     trainer = pl.Trainer(
         default_root_dir=get_logs_path(args.training_dir),
         max_steps=model.max_steps,
-        callbacks=[EMA(0.9999)],
+        callbacks=[EMA(0.9999), ProgressUpdater(args)],
         accelerator='gpu',
         devices=[0]
     )
