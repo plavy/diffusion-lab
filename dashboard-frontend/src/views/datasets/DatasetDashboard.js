@@ -31,6 +31,8 @@ import {
 import LoadingButton from "../../components/LoadingButton";
 import StartTrainModal from "../sessions/StartTrainModal";
 import StopTrainModal from "../sessions/StopTrainModal";
+import DeleteTrainModal from "../sessions/DeleteTrainModal";
+import LogsModal from "../sessions/LogsModal";
 
 
 const DatasetDashboard = () => {
@@ -46,9 +48,8 @@ const DatasetDashboard = () => {
   const [generateProgressRequestParam, setGenerateProgressRequestParam] = useState(null);
   const [startTrainVisible, setStartTrainVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
-  const [stopTrainSessionName, setStopTrainSessionName] = useState(null);
   const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
-  const [deleteTrainSessionName, setDeleteTrainSessionName] = useState(null);
+  const [logsVisible, setLogsVisible] = useState(false);
 
   const [selectedSession, setSelectedSession] = useState(null);
   const [selectedServer, setSelectedServer] = useState(null);
@@ -63,7 +64,7 @@ const DatasetDashboard = () => {
   const autoRefresh = useSelector((state) => state.autoRefresh)
   const serverList = useSelector((state) => state.serverList);
 
-  
+
   useEffect(() => {
     const servers = getLocal('servers');
     if (servers) {
@@ -75,11 +76,11 @@ const DatasetDashboard = () => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-    .then((res) => {
-      dispatch({ type: 'set', serverList: res.data });
-      storeLocal('servers', res.data);
-      // setStartSSHServer(res.data);
-    });
+      .then((res) => {
+        dispatch({ type: 'set', serverList: res.data });
+        storeLocal('servers', res.data);
+        // setStartSSHServer(res.data);
+      });
   }, []);
 
   useEffect(() => {
@@ -155,7 +156,7 @@ const DatasetDashboard = () => {
   }, [autoRefresh])
   useEffect(() => {
     getTrainedModels();
-  }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible]);
+  }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, activeAccordionItem]);
 
   // Track generation progress
   useEffect(() => {
@@ -208,7 +209,8 @@ const DatasetDashboard = () => {
               <br />
               <CButton type="submit" color="primary" onClick={() => {
                 setSelectedSession(model.sessionName);
-                startLogs();
+                setSelectedServer(model.sshServer);
+                setLogsVisible(true);
               }}>Logs</CButton>
               <CButton type="submit" color="primary" className="ms-2" onClick={() => {
                 setSelectedSession(model.sessionName);
@@ -240,7 +242,8 @@ const DatasetDashboard = () => {
               }}>Generate image</CButton>
               <CButton type="submit" color="primary" className="ms-2">Details</CButton>
               <CButton type="submit" color="primary" className="ms-2" onClick={() => {
-                setDeleteTrainSessionName(model.sessionName);
+                setSelectedSession(model.sessionName);
+                setSelectedServer(model.sshServer);
                 setDeleteTrainVisible(true);
               }}>Delete</CButton>
             </CAccordionBody>
@@ -267,47 +270,13 @@ const DatasetDashboard = () => {
       } else {
         images.push(<CCol className="position-relative p-1" key={i}>
           <CProgress className="w-100 h-100 ratio ratio-1x1 bg-transparent" value={generateProgress} />
-          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" color="dark"  animation="wave">
+          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" color="dark" animation="wave">
             <CPlaceholder className="w-100 h-100 rounded-2"></CPlaceholder>
           </CPlaceholder>
         </CCol>)
       }
     }
     return images;
-  }
-
-  // Train Modal
-  const [trainFormData, setTrainFormData] = useState({
-    "preprocessing": "1",
-    "model": "1",
-    "hyperparameter:learningRate": "1e-10",
-    "hyperparameter:maxSteps": "100",
-    "sessionName": "",
-    "sshServer": "",
-  });
-
-  const handleTrainChange = (e) => {
-    setTrainFormData({
-      ...trainFormData,
-      [e.target.id]: e.target.value,
-    });
-  };
-
-  const handleTrainSubmit = async (e) => {
-    storeLocal('last-train-server', trainFormData.sshServer);
-    axios.post(`${getBackendURL()}/servers/${trainFormData.sshServer}/train/${id}`, trainFormData, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      }
-    }).then(res => { setStartTrainVisible(false) });
-  }
-
-  const deleteTraining = async (sessionName) => {
-    axios.delete(`${getBackendURL()}/datasets/${id}/models/${sessionName}`, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      }
-    }).then(res => { setDeleteTrainVisible(false) });
   }
 
   // Generate Modal
@@ -413,10 +382,6 @@ const DatasetDashboard = () => {
 
           <div className="d-flex flex-row gap-3 justify-content-center">
             <CButton color="primary" size='lg' onClick={() => {
-              setTrainFormData({
-                ...trainFormData,
-                ["sessionName"]: `model-${getDateTime()}`,
-              });
               setStartTrainVisible(true);
             }}>Train new model</CButton>
             <CButton color="primary" size='lg' onClick={() => {
@@ -426,7 +391,10 @@ const DatasetDashboard = () => {
         </div>
       </div>
 
-      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} datasetId={id}/>
+      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} dataset={id} />
+      <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} sessionName={selectedSession} server={selectedServer} />
+      <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} sessionName={selectedSession} dataset={id} />
+      <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} sessionName={selectedSession} server={selectedServer}/>
 
       <CModal
         scrollable
@@ -482,27 +450,7 @@ const DatasetDashboard = () => {
         </CModalFooter>
       </CModal>
 
-      <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} sessionName={selectedSession} server={selectedServer}/>
-
-      <CModal
-        scrollable
-        visible={deleteTrainVisible}
-        onClose={() => setDeleteTrainVisible(false)}
-        aria-labelledby="DeleteTrainModal"
-      >
-        <CModalHeader>
-          <CModalTitle id="DeleteTrainModal">Delete training</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          <p>Are you sure you want to delete training {deleteTrainSessionName}?</p>
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setDeleteTrainVisible(false)}>Cancel</CButton>
-          <CButton color="primary" onClick={() => deleteTraining(deleteTrainSessionName)}>Delete training</CButton>
-        </CModalFooter>
-      </CModal>
     </>
-
   )
 }
 

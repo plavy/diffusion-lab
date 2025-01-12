@@ -6,9 +6,9 @@ import LoadingButton from "../../components/LoadingButton";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
 
-const StartTrainModal = ({ modalVisible, setModalVisible, serverList, datasetId }) => {
+const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset }) => {
   const [formData, setFormData] = useState({
-    "dataset": datasetId,
+    "dataset": dataset,
     "preprocessing": "crop",
     "model": "pixel-diffusion",
     "hyperparameter:learningRate": "1e-10",
@@ -68,7 +68,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, datasetId 
     size="lg"
   >
     <CModalHeader>
-      <CModalTitle id="TrainModal">Train</CModalTitle>
+      <CModalTitle>Train</CModalTitle>
     </CModalHeader>
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}

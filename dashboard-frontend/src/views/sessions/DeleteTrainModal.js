@@ -4,13 +4,13 @@ import LoadingButton from "../../components/LoadingButton";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const StopTrainModal = ({ modalVisible, setModalVisible, sessionName, server }) => {
+const DeleteTrainModal = ({ modalVisible, setModalVisible, sessionName, dataset }) => {
 
   const [watingResponse, setWaitingRespone] = useState(false);
   const [errorMesage, setErrorMessage] = useState("");
   const stopTraining = async () => {
     setWaitingRespone(true);
-    axios.delete(`${getBackendURL()}/servers/${server}/train/${sessionName}`, {
+    axios.delete(`${getBackendURL()}/datasets/${dataset}/models/${sessionName}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -36,17 +36,17 @@ const StopTrainModal = ({ modalVisible, setModalVisible, sessionName, server }) 
     onClose={() => setModalVisible(false)}
   >
     <CModalHeader>
-      <CModalTitle>Stop training</CModalTitle>
+      <CModalTitle>Delete training</CModalTitle>
     </CModalHeader>
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
-      <p>Are you sure you want to stop training {sessionName}?</p>
+      <p>Are you sure you want to delete training {sessionName}?</p>
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancel</CButton>
-      <LoadingButton loadingVisible={watingResponse} color="primary" onClick={() => stopTraining()}>Stop training</LoadingButton>
+      <LoadingButton loadingVisible={watingResponse} color="primary" onClick={() => stopTraining()}>Delete training</LoadingButton>
     </CModalFooter>
   </CModal>
 }
 
-export default StopTrainModal;
+export default DeleteTrainModal;

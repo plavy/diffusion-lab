@@ -195,7 +195,7 @@ router.post('/:id/train', async (req, res) => {
             --dataset-dir '${datasetDir}/${datasetId}' \
             --training-dir '${cwd}' \
             --metadata-file '${cwd}/${metadataFile}' \
-            ; sleep 60";`;  
+            ; sleep 60";`;
     const response2 = await ssh.exec(command);
     ssh.close();
 
@@ -224,29 +224,24 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
   }
 });
 
+// Stream logs
 router.get('/:id/train/:sessionName/logs', async (req, res) => {
   const id = req.params.id;
   const sessionName = req.params.sessionName;
   try {
+    console.log('trying logging');
 
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
-    const {stdout, stderr} = await ssh.exec(`tmux attach-session -t ${sessionName}`, {stream: 'both'});
-
-    stdout.on('data', (data) => {
-      console.log(`[TMUX STDOUT] ${data}`);
-    });
-    stderr.on('data', (data) => {
-      console.log(`[TMUX STDERR] ${data}`);
-    });
-
+    
+    await ssh.exec(`tmux pipe-pane -t ${sessionName} "cat > tmux-output"`);
+    const response = await ssh.exec('cat tmux-output; rm tmux-output');
     ssh.close();
-    res.json({code: 0});
+    res.send(response);
   } catch (error) {
-    res.status(500);
-    res.json(error);
-    console.error('Error for /servers/:id/train/:sessionName/logs for', id, ':', error.message);
+    res.status(500).send(error);
+    console.error('Error for /servers/:id/train/:sessionName/logs for', id, ':', error);
   }
 
 });
