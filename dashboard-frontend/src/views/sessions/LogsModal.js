@@ -41,7 +41,6 @@ const LogsModal = ({ modalVisible, setModalVisible, session }) => {
     onClose={() => setModalVisible(false)}
     size="lg"
   >
-
     <CModalHeader>
       <CModalTitle>Logs</CModalTitle>
     </CModalHeader>

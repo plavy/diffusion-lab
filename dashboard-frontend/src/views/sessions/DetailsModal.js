@@ -1,4 +1,4 @@
-import { CAlert, CButton, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
+import { CAlert, CButton, CFormCheck, CFormSwitch, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
 import { getAuthHeader, getBackendURL } from "../../utils";
 import { useEffect, useState } from "react";
 import axios from "axios";
@@ -10,7 +10,8 @@ import TrainingGraph from "../../components/TrainingGraph";
 const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
   const [watingResponse, setWaitingRespone] = useState(true);
   const [errorMesage, setErrorMessage] = useState("");
-  const [metrics, setMetrics] = useState("");
+  const [metrics, setMetrics] = useState(null);
+  const [clearView, setClearView] = useState(true);
 
   const getLogs = async () => {
     setWaitingRespone(true);
@@ -33,8 +34,13 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
     } else {
       setWaitingRespone(false);
       setErrorMessage("");
+      setMetrics(null);
     }
   }, [modalVisible]);
+
+  const handleClearViewChange = (e) => {
+    setClearView(e.target.checked);
+  }
 
   return <CModal
     scrollable
@@ -42,7 +48,6 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
     onClose={() => setModalVisible(false)}
     size="xl"
   >
-
     <CModalHeader>
       <CModalTitle>Details</CModalTitle>
     </CModalHeader>
@@ -51,12 +56,17 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
       {watingResponse ? <div className="w-100 d-flex flex-column jutify-items-center align-items-center">
         <CSpinner color="primary" variant="grow" />
       </div>
-        : <>
-        <TrainingGraph epoch={metrics.epoch} trainLoss={metrics.train_loss} valLoss={metrics.val_loss}/>
-        </>}
-      
+        : null
+      }
+      {metrics ? <>
+        <TrainingGraph epoch={metrics.epoch} trainLoss={metrics.train_loss} valLoss={metrics.val_loss} clearView={clearView}/>
+      </>
+        : null
+      }
     </CModalBody>
     <CModalFooter>
+      <CFormSwitch id="clear-view-check2" className="me-1" label="Clear view" checked={clearView}  onChange={handleClearViewChange} />
+      <div className="separator flex-grow-1"></div>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Close</CButton>
     </CModalFooter>
   </CModal>

@@ -6,7 +6,7 @@ import { CChart, CChartLine } from '@coreui/react-chartjs'
 import zoomPlugin from 'chartjs-plugin-zoom';
 ChartJS.register(...registerables, zoomPlugin);
 
-export const TrainingGraph = ({ epoch, trainLoss, valLoss }) => {
+export const TrainingGraph = ({ epoch, trainLoss, valLoss, clearView }) => {
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -48,25 +48,34 @@ export const TrainingGraph = ({ epoch, trainLoss, valLoss }) => {
     }
   }, [])
 
-  const trainLossNull = trainLoss.map(el => el == 0 ? null : el)
-  const valLossNull = valLoss.map(el => el == 0 ? null : el)
+
+  let epochProccessed = epoch;
+  let trainLossProccessed = trainLoss.map(el => el == 0 ? null : el);
+  let valLossNullProccessed = valLoss.map(el => el == 0 ? null : el);
+
+  if (clearView) {
+    const dropCondition = (index) => index % Math.ceil((index + 1) / 100) == 0;
+    epochProccessed = epochProccessed.filter((_, index) => dropCondition(index));
+    trainLossProccessed = trainLossProccessed.filter((_, index) => dropCondition(index));
+    valLossNullProccessed = valLossNullProccessed.filter((_, index) => dropCondition(index));
+  }
 
   const data = {
-    labels: epoch,
+    labels: epochProccessed,
     datasets: [
       {
-        label: 'Train loss',
-        data: trainLossNull,
-        borderColor: 'green',
+        label: 'Validation loss',
+        data: valLossNullProccessed,
+        borderColor: 'orange',
         borderWidth: 1,
         pointBackgroundColor: 'transparent',
         pointBorderColor: 'transparent',
         pointRadius: 3,
       },
       {
-        label: 'Validation loss',
-        data: valLossNull,
-        borderColor: 'yellow',
+        label: 'Train loss',
+        data: trainLossProccessed,
+        borderColor: 'gray',
         borderWidth: 1,
         pointBackgroundColor: 'transparent',
         pointBorderColor: 'transparent',

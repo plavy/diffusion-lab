@@ -58,14 +58,14 @@ const AppHeader = () => {
       <CContainer className="border-bottom px-4" fluid>
         <div>
 
-        <CHeaderToggler
-          onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
-          style={{ marginInlineStart: '-14px' }}
+          <CHeaderToggler
+            onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
+            style={{ marginInlineStart: '-14px' }}
           >
-          <CIcon icon={cilMenu} size="lg" />
-        </CHeaderToggler>
-        Diffusion Lab
-          </div>
+            <CIcon icon={cilMenu} size="lg" />
+          </CHeaderToggler>
+          Diffusion Lab
+        </div>
         <CHeaderNav>
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle caret={false}>
@@ -114,19 +114,15 @@ const AppHeader = () => {
               }
             </CDropdownToggle>
             <CDropdownMenu className="pt-0">
+              <CDropdownItem href="#">
+                <CFormCheck id="auto-refresh-toggle" label="Auto-refresh" checked={autoRefresh} onChange={handleAutoRefreshChange}></CFormCheck>
+              </CDropdownItem>
               <CDropdownItem href="#" onClick={() => {
                 logout();
                 window.location.reload();
               }}>
                 <CIcon icon={cilAccountLogout} className="me-2" />
                 Log out
-              </CDropdownItem>
-              <CDropdownItem href="#">
-                <CFormCheck id="auto-refresh-toggle" label="Auto-refresh" checked={autoRefresh} onChange={handleAutoRefreshChange}></CFormCheck>
-              </CDropdownItem>
-              <CDropdownItem href="#">
-                <CIcon icon={cilSettings} className="me-2" />
-                Settings
               </CDropdownItem>
             </CDropdownMenu>
           </CDropdown>
