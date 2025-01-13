@@ -48,6 +48,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset })
   const handleSubmit = async (e) => {
     e.preventDefault();
     setWaitingRespone(true);
+    setErrorMessage("");
     storeLocal('last-train-server', formData.sshServer);
     axios.post(`${getBackendURL()}/servers/${formData.sshServer}/train`, formData, {
       headers: {

@@ -58,6 +58,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
 
   const handleSubmit = async (e) => {
     setWaitingRespone(true);
+    setErrorMessage("");
     setFormVisible(false);
     setImageSrcList(new Array(Number(formData.numberImages)).fill(null));
     const timestamp = Date.now();
@@ -77,6 +78,8 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
             responseType: 'blob', // Fetch as binary
           })
             .then(res => {
+              setWaitingRespone(false);
+              setErrorMessage("");
               setImageSrcList((prev) => {
                 prev[i] = URL.createObjectURL(res.data);
                 return [...prev];

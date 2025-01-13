@@ -13,6 +13,7 @@ const LogsModal = ({ modalVisible, setModalVisible, session, server }) => {
 
   const getLogs = async () => {
     setWaitingRespone(true);
+    setErrorMessage("");
     axios.get(`${getBackendURL()}/servers/${server}/train/${session.sessionName}/logs`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS

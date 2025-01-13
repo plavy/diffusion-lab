@@ -8,6 +8,7 @@ from webdav3.client import Client
 class ProgressUpdater(Callback):
   def __init__(self, args):
     self.args = args
+    self.loop = asyncio.get_event_loop()
 
   def get_metadata(self):
     with open(self.args.metadata_file, 'r') as f:
@@ -20,8 +21,11 @@ class ProgressUpdater(Callback):
       with open(self.args.metadata_file, 'w') as f:
           json.dump(metadata, f, indent=2)
 
-  def on_train_epoch_end(self, trainer, pl_module):
-    try:   
+  async def async_upload(self, trainer):
+    await asyncio.to_thread(self.updata_progress, trainer)
+
+  def updata_progress(self, trainer):
+    try:
       progress = round(trainer.global_step / trainer.estimated_stepping_batches * 100)
       self.set_metadata("trainingProgress", progress)
       self.set_metadata("trainingDone", False)
@@ -34,4 +38,7 @@ class ProgressUpdater(Callback):
       })
       dav.upload_sync(local_path=self.args.metadata_file, remote_path=self.args.metadata_file)
     except:
-      print('ERROR WebDAV server unreachable.')
+      print('WARN WebDAV server unreachable. Skipping.')
+
+  def on_train_epoch_end(self, trainer, pl_module):
+    asyncio.run_coroutine_threadsafe(self.async_upload(trainer), self.loop)

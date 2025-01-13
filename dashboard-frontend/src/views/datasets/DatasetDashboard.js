@@ -195,6 +195,7 @@ const DatasetDashboard = () => {
               SSH server: {model.sshServer}
               <br />
               <CButton type="submit" color="primary" onClick={() => {
+                setSelectedSession(model);
                 setGenerateVisible(true);
               }}>Generate image</CButton>
               <CButton type="submit" color="primary" className="ms-2">Details</CButton>

@@ -10,6 +10,7 @@ const StopTrainModal = ({ modalVisible, setModalVisible, session }) => {
   const [errorMesage, setErrorMessage] = useState("");
   const stopTraining = async () => {
     setWaitingRespone(true);
+    setErrorMessage("");
     axios.delete(`${getBackendURL()}/servers/${session.server}/train/${session.sessionName}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS

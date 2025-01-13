@@ -27,8 +27,11 @@ CROP_SIZE = 64
 
 def sample(args):
     if not os.path.exists(os.path.join('model.ckpt')):
-        print('Model not found.')
+        print('ERROR Model not found.')
+        exit(1)
         return
+
+    os.makedirs(args.save_dir, exist_ok=True)
 
     batch_size = int(args.number)
 
@@ -43,7 +46,6 @@ def sample(args):
 
     transform = torchvision.transforms.ToPILImage()
 
-    os.makedirs(args.save_dir, exist_ok=True)
     for i in range(batch_size):
         pil_img = transform(out[i].detach().cpu())
         pil_img.save(os.path.join(args.save_dir, f'{args.base_name}-{i}.jpg'))
