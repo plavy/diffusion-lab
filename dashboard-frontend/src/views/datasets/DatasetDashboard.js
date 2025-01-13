@@ -11,28 +11,18 @@ import {
   CAccordionItem,
   CAccordionHeader,
   CAccordionBody,
-  CModal,
-  CModalTitle,
-  CModalHeader,
-  CModalBody,
-  CModalFooter,
-  CFormSelect,
-  CForm,
-  CFormInput,
   CBadge,
   CContainer,
   CRow,
   CCol,
   CImage,
   CSpinner,
-  CProgress,
-  CPlaceholder
 } from "@coreui/react";
-import LoadingButton from "../../components/LoadingButton";
 import StartTrainModal from "../sessions/StartTrainModal";
 import StopTrainModal from "../sessions/StopTrainModal";
 import DeleteTrainModal from "../sessions/DeleteTrainModal";
 import LogsModal from "../sessions/LogsModal";
+import GenerateModal from "../sessions/GenerateModal";
 
 
 const DatasetDashboard = () => {
@@ -43,33 +33,26 @@ const DatasetDashboard = () => {
   const [siteReady, setSiteReady] = useState(false);
 
   const [generateVisible, setGenerateVisible] = useState(false);
-  const [generateFormVisible, setGenerateFormVisible] = useState(false);
-  const [generateProgress, setGenerateProgress] = useState(0);
-  const [generateProgressRequestParam, setGenerateProgressRequestParam] = useState(null);
   const [startTrainVisible, setStartTrainVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
   const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
   const [logsVisible, setLogsVisible] = useState(false);
 
   const [selectedSession, setSelectedSession] = useState(null);
-  const [selectedServer, setSelectedServer] = useState(null);
 
   const [trainedModels, setTrainedModels] = useState([]);
   const [trainedModelsReady, setTrainedModelsReady] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState(null);
 
   const [imageSrcList, setImageSrcList] = useState([]);
-  const [generatedImageSrcList, setGeneratedImageSrcList] = useState([]);
 
   const autoRefresh = useSelector((state) => state.autoRefresh)
   const serverList = useSelector((state) => state.serverList);
-
 
   useEffect(() => {
     const servers = getLocal('servers');
     if (servers) {
       dispatch({ type: 'set', serverList: servers });
-      // setStartSSHServer(servers);
     }
     axios.get(`${getBackendURL()}/servers`, {
       headers: {
@@ -79,13 +62,13 @@ const DatasetDashboard = () => {
       .then((res) => {
         dispatch({ type: 'set', serverList: res.data });
         storeLocal('servers', res.data);
-        // setStartSSHServer(res.data);
       });
   }, []);
 
   useEffect(() => {
     setSiteReady(false);
     setTrainedModelsReady(false);
+    setSelectedSession(null);
   }, [id]);
 
   // Metadata
@@ -113,6 +96,7 @@ const DatasetDashboard = () => {
     }
   }, [id]);
 
+  // Dataset images
   useEffect(() => {
     setImageSrcList([]);
     axios.get(`${getBackendURL()}/datasets/${id}/images/train`, {
@@ -135,6 +119,15 @@ const DatasetDashboard = () => {
       })
   }, [id]);
 
+  const ImagesTrain = () => {
+    let images = []
+    for (let imageSrc of imageSrcList) {
+      images.push(<CCol className="p-1 position-relative" key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
+    }
+    return images;
+  }
+
+  // Trained models
   const getTrainedModels = () => {
     axios.get(`${getBackendURL()}/datasets/${id}/models`, {
       headers: {
@@ -158,35 +151,6 @@ const DatasetDashboard = () => {
     getTrainedModels();
   }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, activeAccordionItem]);
 
-  // Track generation progress
-  useEffect(() => {
-    let updateProgress = true;
-
-    if (generateVisible && generateProgressRequestParam) {
-      const interval = setInterval(() => {
-        axios.get(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${generateProgressRequestParam}/progress`, {
-          headers: {
-            Authorization: getAuthHeader() // Encrypted by TLS
-          },
-        }).then(res => {
-          if (updateProgress) {
-            const progress = Number(res.data);
-            setGenerateProgress(progress);
-            if (progress == 100) {
-              updateProgress = false;
-              setGenerateProgressRequestParam(null);
-            }
-          }
-        })
-      }, 1000);
-      return () => {
-        updateProgress = false;
-        clearInterval(interval);
-      }
-    }
-  }, [generateVisible, generateProgressRequestParam])
-
-  // Trained models accordion
   const AccordionItems = () => {
     let accordionItems = [];
     for (let model of trainedModels) {
@@ -208,13 +172,11 @@ const DatasetDashboard = () => {
               SSH server: {model.sshServer}
               <br />
               <CButton type="submit" color="primary" onClick={() => {
-                setSelectedSession(model.sessionName);
-                setSelectedServer(model.sshServer);
+                setSelectedSession(model);
                 setLogsVisible(true);
               }}>Logs</CButton>
               <CButton type="submit" color="primary" className="ms-2" onClick={() => {
-                setSelectedSession(model.sessionName);
-                setSelectedServer(model.sshServer);
+                setSelectedSession(model);
                 setStopTrainVisible(true);
               }}>Stop training</CButton>
             </CAccordionBody>
@@ -233,17 +195,11 @@ const DatasetDashboard = () => {
               SSH server: {model.sshServer}
               <br />
               <CButton type="submit" color="primary" onClick={() => {
-                setGenerateFormData({
-                  ...generateFormData,
-                  ["trainedModel"]: model.sessionName,
-                  ["sshServer"]: model.sshServer,
-                });
-                openGenerateModal();
+                setGenerateVisible(true);
               }}>Generate image</CButton>
               <CButton type="submit" color="primary" className="ms-2">Details</CButton>
               <CButton type="submit" color="primary" className="ms-2" onClick={() => {
-                setSelectedSession(model.sessionName);
-                setSelectedServer(model.sshServer);
+                setSelectedSession(model);
                 setDeleteTrainVisible(true);
               }}>Delete</CButton>
             </CAccordionBody>
@@ -254,91 +210,6 @@ const DatasetDashboard = () => {
     return accordionItems
   }
 
-  const ImagesTrain = () => {
-    let images = []
-    for (let imageSrc of imageSrcList) {
-      images.push(<CCol className="p-1 position-relative" key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
-    }
-    return images;
-  }
-
-  const ImagesGenerate = () => {
-    let images = [];
-    for (let i in generatedImageSrcList) {
-      if (generatedImageSrcList[i]) {
-        images.push(<CCol className="p-1" key={i}><CImage className="w-100" fluid src={generatedImageSrcList[i]} /></CCol>)
-      } else {
-        images.push(<CCol className="position-relative p-1" key={i}>
-          <CProgress className="w-100 h-100 ratio ratio-1x1 bg-transparent" value={generateProgress} />
-          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" color="dark" animation="wave">
-            <CPlaceholder className="w-100 h-100 rounded-2"></CPlaceholder>
-          </CPlaceholder>
-        </CCol>)
-      }
-    }
-    return images;
-  }
-
-  // Generate Modal
-  const [generateFormData, setGenerateFormData] = useState({
-    "trainedModel": "",
-    "numberImages": "4",
-    "sshServer": "",
-  });
-
-  const openGenerateModal = () => {
-    setGenerateProgress(0);
-    setGenerateProgressRequestParam(null);
-    setGeneratedImageSrcList([]);
-    setGenerateVisible(true);
-    setGenerateFormVisible(true);
-  }
-
-  const handleGenerateChange = (e) => {
-    setGenerateFormData({
-      ...generateFormData,
-      [e.target.id]: e.target.value,
-    });
-  };
-
-  const handleGenerateSubmit = async (e) => {
-    setGenerateFormVisible(false);
-    setGeneratedImageSrcList(new Array(Number(generateFormData.numberImages)).fill(null));
-    const timestamp = Date.now();
-    const body = { ...generateFormData };
-    body['datasetId'] = id;
-    axios.post(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${timestamp}`, body, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      },
-    }).then(res => {
-      for (let i = 0; i < generateFormData.numberImages; i++) {
-        axios.get(`${getBackendURL()}/servers/${generateFormData.sshServer}/generate/${timestamp}/image/${i}`, {
-          headers: {
-            Authorization: getAuthHeader() // Encrypted by TLS
-          },
-          responseType: 'blob', // Fetch as binary
-        })
-          .then(res => {
-            setGeneratedImageSrcList((prev) => {
-              prev[i] = URL.createObjectURL(res.data);
-              return [...prev];
-            });
-          })
-        // .catch
-      }
-    });
-    setGenerateProgress(0);
-    setGenerateProgressRequestParam(timestamp);
-  }
-
-  const startLogs = () => {
-    axios.get(`${getBackendURL()}/datasets/${id}/models/${selectedSession}/logs`, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      }
-    }).then(res => { });
-  }
 
   // Site not ready
   if (!siteReady) {
@@ -385,70 +256,18 @@ const DatasetDashboard = () => {
               setStartTrainVisible(true);
             }}>Train new model</CButton>
             <CButton color="primary" size='lg' onClick={() => {
-              openGenerateModal();
+              setGenerateVisible(true);
             }}>Generate image</CButton>
           </div>
         </div>
       </div>
 
       <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} dataset={id} />
-      <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} sessionName={selectedSession} server={selectedServer} />
-      <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} sessionName={selectedSession} dataset={id} />
-      <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} sessionName={selectedSession} server={selectedServer}/>
+      <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
+      <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
+      <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} session={selectedSession} />
 
-      <CModal
-        scrollable
-        visible={generateVisible}
-        onClose={() => setGenerateVisible(false)}
-        aria-labelledby="GenerateModal"
-        size="lg"
-      >
-        <CModalHeader>
-          <CModalTitle id="GenerateModal">Generate</CModalTitle>
-        </CModalHeader>
-        <CModalBody>
-          {generateFormVisible && <CForm>
-
-            <CFormSelect
-              id="trainedModel"
-              floatingLabel="Trained model"
-              options={trainedModels
-                .filter(model => model.trainingDone)
-                .map(model => ({
-                  label: model.sessionName,
-                  value: model.sessionName
-                }))}
-              value={generateFormData["trainedModel"]}
-              onChange={handleGenerateChange}
-            />
-            <CFormInput className="mt-2"
-              id="numberImages"
-              type="text"
-              floatingLabel="Number of images"
-              value={generateFormData["numberImages"]}
-              onChange={handleGenerateChange}
-            />
-            <CFormSelect className="mt-2"
-              id="sshServer"
-              floatingLabel="SSH server"
-              options={serverList.map(server => ({
-                label: server.name,
-                value: server.id
-              }))}
-              value={generateFormData["sshServer"]}
-              onChange={handleGenerateChange}
-            />
-          </CForm>}
-          <CRow xs={{ cols: 2 }}>
-            <ImagesGenerate />
-          </CRow>
-        </CModalBody>
-        <CModalFooter>
-          <CButton color="secondary" onClick={() => setGenerateVisible(false)}>Close</CButton>
-          {/* <CButton color="primary">Download</CButton> */}
-          <CButton color="primary" onClick={handleGenerateSubmit}>Generate</CButton>
-        </CModalFooter>
-      </CModal>
+      <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={trainedModels} session={selectedSession} dataset={id} />
 
     </>
   )

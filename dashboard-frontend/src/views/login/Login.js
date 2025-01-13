@@ -31,7 +31,7 @@ const Login = () => {
                 <CFormInput className="mb-3"
                     type="text"
                     id="url"
-                    label="WebDAV Server URL"
+                    label="Storate Server URL (WebDAV)"
                     placeholder="nextcloud.com/remote.php/webdav"
                     value={formData["url"]}
                     onChange={handleChange}

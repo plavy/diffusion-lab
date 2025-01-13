@@ -90,7 +90,6 @@ const ServerDashboard = () => {
 
   const [syncingVisible, setSyncingVisible] = useState(false);
   const [syncingSuccessVisible, setSyncingSuccessVisible] = useState(false);
-
   const syncScripts = async () => {
     setSyncingSuccessVisible(false);
     setSyncingVisible(true);
@@ -98,9 +97,25 @@ const ServerDashboard = () => {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
+    }).then((res) => {
+      setSyncingVisible(false);
+      setSyncingSuccessVisible(true);
     });
-    setSyncingVisible(false);
-    setSyncingSuccessVisible(true);
+  };
+
+  const [clearingCacheVisible, setClearingCacheVisible] = useState(false);
+  const [clearingCacheSuccessVisible, setClearingCacheSuccessVisible] = useState(false);
+  const clearCache = async () => {
+    setClearingCacheVisible(false);
+    setClearingCacheSuccessVisible(true);
+    await axios.delete(`${getBackendURL()}/servers/${id}/cache`, {
+      headers: {
+        Authorization: getAuthHeader() // Encrypted by TLS
+      }
+    }).then((res) => {
+      setClearingCacheVisible(false);
+      setClearingCacheSuccessVisible(true);
+    });
   };
 
   const navigate = useNavigate();
@@ -169,21 +184,23 @@ const ServerDashboard = () => {
 
         <h2>Maintenance control</h2>
         <CContainer className="bg-body rounded-4 p-3">
-          <div>Syncing will update or create Diffusion Lab files on the server without removing anything, and update Python environment. Dataset files are not affected by syncing.</div>
-          <CButton className="mt-2" type="submit" color="primary" onClick={() => syncScripts()}>
+          <div>Syncing will update Diffusion Lab training scripts and models on the SSH server, and also update Python environment. Dataset files are not affected by syncing.</div>
+          <CButton className="mt-2" type="submit" color="primary" disabled={syncingVisible} onClick={() => syncScripts()}>
             <CSpinner size="sm" className="me-1" hidden={!syncingVisible} />
             <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible} />
             Sync environment
           </CButton>
         </CContainer>
         <CContainer className="bg-body rounded-4 p-3 mt-3">
-          <div>Clearing cache will remove datasets, trained models, and all other Diffusion Lab files from the server, except the Python environment. Run sync to quickly install Diffusion Lab again.</div>
-          <CButton className="mt-2" type="submit" color="primary">
+          <div>Clearing cache will remove datasets, trained models, and generated images from the SSH server. Storage server is not be affected.</div>
+          <CButton className="mt-2" type="submit" color="primary" disabled={clearingCacheVisible} onClick={() => clearCache()}>
+            <CSpinner size="sm" className="me-1" hidden={!clearingCacheVisible} />
+            <CIcon icon={cilCheck} className="me-1" hidden={!clearingCacheSuccessVisible} />
             Clear cache
           </CButton>
         </CContainer>
         <CContainer className="bg-body rounded-4 p-3 mt-3">
-          <div>Uninstalling will remove all Diffusion Lab files from the server. The server will also be removed from the dashboard.</div>
+          <div>Uninstalling will remove all Diffusion Lab files from the SSH server. The SSH server will also be removed from the dashboard. Storage server is not be affected.</div>
           <LoadingButton className="mt-2" loadingVisible={removeLoading} type="submit" color="primary" onClick={() => removeServer()}>
             Uninstall environment
           </LoadingButton>

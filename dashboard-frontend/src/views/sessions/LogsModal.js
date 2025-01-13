@@ -6,14 +6,14 @@ import CIcon from "@coreui/icons-react";
 import { cilWarning } from "@coreui/icons";
 
 
-const LogsModal = ({ modalVisible, setModalVisible, sessionName, server }) => {
+const LogsModal = ({ modalVisible, setModalVisible, session, server }) => {
   const [watingResponse, setWaitingRespone] = useState(true);
   const [errorMesage, setErrorMessage] = useState("");
   const [logs, setLogs] = useState("");
 
   const getLogs = async () => {
     setWaitingRespone(true);
-    axios.get(`${getBackendURL()}/servers/${server}/train/${sessionName}/logs`, {
+    axios.get(`${getBackendURL()}/servers/${server}/train/${session.sessionName}/logs`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }

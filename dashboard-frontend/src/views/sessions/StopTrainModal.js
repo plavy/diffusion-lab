@@ -4,13 +4,13 @@ import LoadingButton from "../../components/LoadingButton";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const StopTrainModal = ({ modalVisible, setModalVisible, sessionName, server }) => {
+const StopTrainModal = ({ modalVisible, setModalVisible, session }) => {
 
   const [watingResponse, setWaitingRespone] = useState(false);
   const [errorMesage, setErrorMessage] = useState("");
   const stopTraining = async () => {
     setWaitingRespone(true);
-    axios.delete(`${getBackendURL()}/servers/${server}/train/${sessionName}`, {
+    axios.delete(`${getBackendURL()}/servers/${session.server}/train/${session.sessionName}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -40,7 +40,7 @@ const StopTrainModal = ({ modalVisible, setModalVisible, sessionName, server }) 
     </CModalHeader>
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
-      <p>Are you sure you want to stop training {sessionName}?</p>
+      <p>Are you sure you want to stop training {session ? session.sessionName : null}?</p>
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancel</CButton>

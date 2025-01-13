@@ -4,13 +4,13 @@ import LoadingButton from "../../components/LoadingButton";
 import { useEffect, useState } from "react";
 import axios from "axios";
 
-const DeleteTrainModal = ({ modalVisible, setModalVisible, sessionName, dataset }) => {
+const DeleteTrainModal = ({ modalVisible, setModalVisible, session, dataset }) => {
 
   const [watingResponse, setWaitingRespone] = useState(false);
   const [errorMesage, setErrorMessage] = useState("");
   const stopTraining = async () => {
     setWaitingRespone(true);
-    axios.delete(`${getBackendURL()}/datasets/${dataset}/models/${sessionName}`, {
+    axios.delete(`${getBackendURL()}/datasets/${dataset}/models/${session.sessionName}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -40,7 +40,7 @@ const DeleteTrainModal = ({ modalVisible, setModalVisible, sessionName, dataset 
     </CModalHeader>
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
-      <p>Are you sure you want to delete training {sessionName}?</p>
+      <p>Are you sure you want to delete training {session ? session.sessionName : null}?</p>
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancel</CButton>

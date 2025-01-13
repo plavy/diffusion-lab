@@ -139,11 +139,15 @@ router.post('/:id/sync', async (req, res) => {
 
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
-    for (const dir of dirs) {
-      await ssh.exec(`mkdir -p ${dir.filename.replace(/^\/+/, '')}`);
-    }
 
     try {
+      // Remove old files, if exist, except venv
+      await ssh.exec(`if [[ -d ${scriptsDir} ]]; then find ${scriptsDir} -mindepth 1 -maxdepth 1 ! -name 'venv' -exec rm -r {} +; fi`);
+      // Create directories
+      for (const dir of dirs) {
+        await ssh.exec(`mkdir -p ${dir.filename.replace(/^\/+/, '')}`);
+      }
+      // Create files
       const scp = await SCPClient(sshConfig);
       console.time('syncServer');
       const concurrencyLimit = pLimit(10);
@@ -154,8 +158,8 @@ router.post('/:id/sync', async (req, res) => {
       await Promise.all(tasks);
       console.timeEnd('syncServer');
       scp.close();
-    } catch (e) {
-      console.error('Error for /servers/:id/sync for', id, ':', error.message);
+    } catch (error) {
+      console.error('Error for /servers/:id/sync for', id, ':', error);
     }
 
     console.time('runSetup');
@@ -164,10 +168,26 @@ router.post('/:id/sync', async (req, res) => {
     res.json({ code: 0 });
     ssh.close();
   } catch (error) {
-    res.json({ code: 1 });
+    res.status(500).json({ code: 1 });
     console.error('Error for /servers/:id/sync for', id, ':', error.message);
   }
+});
 
+router.delete('/:id/cache', async (req, res) => {
+  const id = req.params.id;
+  try {
+
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+    const ssh = new SSH2Promise(sshConfig);
+    // Remove directories
+    await ssh.exec(`if [[ -d ${samplesDir} ]]; then rm -r ${samplesDir}; fi`);
+    res.json({ code: 0 });
+    ssh.close();
+  } catch (error) {
+    res.status(500).json({ code: 1 });
+    console.error('Error for /servers/:id/cache for', id, ':', error.message);
+  }
 });
 
 // Start training on SSH server
@@ -224,7 +244,7 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
   }
 });
 
-// Stream logs
+// Get training logs
 router.get('/:id/train/:sessionName/logs', async (req, res) => {
   const id = req.params.id;
   const sessionName = req.params.sessionName;
@@ -234,7 +254,7 @@ router.get('/:id/train/:sessionName/logs', async (req, res) => {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
-    
+
     await ssh.exec(`tmux pipe-pane -t ${sessionName} "cat > tmux-output"`);
     const response = await ssh.exec('cat tmux-output; rm tmux-output');
     ssh.close();
@@ -251,8 +271,8 @@ router.post('/:id/generate/:name', async (req, res) => {
   const id = req.params.id;
   const baseName = req.params.name;
   try {
-    const datasetId = req.body.datasetId;
-    const trainedModel = req.body.trainedModel;
+    const datasetId = ensureVariable("Dataset", req.body.datasetId);
+    const trainedModel = ensureVariable("Trained model", req.body.trainedModel);
 
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
@@ -269,9 +289,8 @@ router.post('/:id/generate/:name', async (req, res) => {
 
     res.json({ code: 0 });
   } catch (error) {
-    res.status(500);
-    res.json(error);
-    console.error('Error for /servers/:id/generate/:name for', id, ':', error.message);
+    res.status(400).send(error.message || error);
+    console.error('Error for /servers/:id/generate/:name for', id, ':', error.message || error);
   }
 });
 

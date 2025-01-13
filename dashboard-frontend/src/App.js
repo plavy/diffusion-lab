@@ -30,24 +30,8 @@ const App = () => {
     setColorMode(storedTheme)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const ProtectedElement = (element) => {
-    if (isAuth()) {
-      return <div>
-        <AppSidebar />
-        <div className="wrapper d-flex flex-column vh-100">
-          <AppHeader />
-          <div className="body flex-grow-1 w-100 d-flex flex-column justify-content-center align-items-center py-2" style={{ height: 0 }}>
-            <route.element />
-          </div>
-        </div>
-      </div>
-    } else {
-      return <Navigate to="/login" replace />
-    }
-  }
-
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{v7_relativeSplatPath: true, v7_startTransition: true}}>
       <Suspense
         fallback={
           <div className="pt-3 text-center">
