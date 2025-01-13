@@ -5,6 +5,7 @@ import { cilWarning } from "@coreui/icons";
 import LoadingButton from "../../components/LoadingButton";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
+import { getStyle } from "@coreui/utils";
 
 const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, sessions, dataset }) => {
   const [watingResponse, setWaitingRespone] = useState(false);
@@ -134,7 +135,6 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
     }
   }, [modalVisible, progressRequestParam]);
 
-
   const ImagesGenerate = () => {
     let images = [];
     for (let i in imageSrcList) {
@@ -143,7 +143,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
       } else {
         images.push(<CCol className="position-relative p-1" key={i}>
           <CProgress className="w-100 h-100 ratio ratio-1x1 bg-transparent" value={progress} />
-          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" color="dark" animation="wave">
+          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" style={{backgroundColor: getStyle('--cui-modal-bg')}} animation="wave">
             <CPlaceholder className="w-100 h-100 rounded-2"></CPlaceholder>
           </CPlaceholder>
         </CCol>)
@@ -169,10 +169,9 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
           id="trainedModel"
           floatingLabel="Trained model"
           options={sessions
-            .filter(model => model.trainingDone)
-            .map(model => ({
-              label: model.sessionName,
-              value: model.sessionName
+            .map(session => ({
+              label: session.sessionName,
+              value: session.sessionName
             }))}
           value={formData["trainedModel"]}
           onChange={handleChange}

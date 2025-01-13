@@ -4,22 +4,23 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
 import { cilWarning } from "@coreui/icons";
+import TrainingGraph from "../../components/TrainingGraph";
 
 
-const LogsModal = ({ modalVisible, setModalVisible, session }) => {
+const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
   const [watingResponse, setWaitingRespone] = useState(true);
   const [errorMesage, setErrorMessage] = useState("");
-  const [logs, setLogs] = useState("");
+  const [metrics, setMetrics] = useState("");
 
   const getLogs = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
-    axios.get(`${getBackendURL()}/servers/${session.sshServer}/train/${session.sessionName}/logs`, {
+    axios.get(`${getBackendURL()}/datasets/${dataset}/models/${session.sessionName}/metrics`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then(res => { setLogs(res.data); setWaitingRespone(false); })
+      .then(res => { setMetrics(res.data); setWaitingRespone(false); })
       .catch(error => {
         setErrorMessage(error.response.data)
         setWaitingRespone(false);
@@ -39,18 +40,21 @@ const LogsModal = ({ modalVisible, setModalVisible, session }) => {
     scrollable
     visible={modalVisible}
     onClose={() => setModalVisible(false)}
-    size="lg"
+    size="xl"
   >
 
     <CModalHeader>
-      <CModalTitle>Logs</CModalTitle>
+      <CModalTitle>Details</CModalTitle>
     </CModalHeader>
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
       {watingResponse ? <div className="w-100 d-flex flex-column jutify-items-center align-items-center">
         <CSpinner color="primary" variant="grow" />
       </div>
-        : logs}
+        : <>
+        <TrainingGraph epoch={metrics.epoch} trainLoss={metrics.train_loss} valLoss={metrics.val_loss}/>
+        </>}
+      
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Close</CButton>
@@ -58,4 +62,4 @@ const LogsModal = ({ modalVisible, setModalVisible, session }) => {
   </CModal>
 }
 
-export default LogsModal;
+export default DetailsModal;

@@ -66,11 +66,6 @@ router.get('/:id/images/train/:name', async (req, res) => {
   const name = req.params.name;
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth)
-    // const response = await dav.getFileContents(datasetDir + id + '/' + trainingDir + name, { format: "text" });
-
-    // const response = await getStream(req.auth.baseUrl + '/' + datasetDir + id + '/' + trainingDir + name, req.auth.username, req.auth.password);
-    // res.setHeader('Content-Type', response.headers['content-type']);
-    // response.data.pipe(res);
     const readStream = dav.createReadStream(datasetDir + id + '/' + trainingDir + name)
     readStream.on('error', (error) => {
       res.status(error.status);
@@ -111,6 +106,36 @@ router.get('/:id/models', async (req, res) => {
     console.error('Error for /datasets/:id/models for', id, ':', error.message);
   }
 });
+
+// Get metrics of a trained model
+router.get('/:id/models/:sessionName/metrics', async (req, res) => {
+  const id = req.params.id;
+  const sessionName = req.params.sessionName;
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const response = await dav.getFileContents(trainedModelsDir + id + "/" + sessionName + "/lightning_logs/version_0/metrics.csv", { format: "text" });
+
+    // Parse CSV to JSON
+    const lines = response.trim().split('\r\n');
+    const headers = lines[0].split(',');
+    const columns = headers.reduce((acc, header) => {
+      acc[header] = [];
+      return acc;
+    }, {});
+    lines.slice(1).forEach((line) => {
+      const values = line.split(',');
+      values.forEach((value, index) => {
+        columns[headers[index]].push(value);
+      });
+    });
+
+    res.json(columns);
+  } catch (error) {
+    res.status(500).send(error.message || error);
+    console.error('Error for /:id/models/:sessionName/metrics for', id, ':', error.message || error);
+  }
+});
+
 
 // Delete a trained model of a dataset
 router.delete('/:id/models/:sessionName', async (req, res) => {

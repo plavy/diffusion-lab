@@ -1,3 +1,4 @@
+import math
 import json
 from multiprocessing import Process
 
@@ -22,9 +23,8 @@ class ProgressUpdater(Callback):
 
   def updata_progress(self, trainer):
     try:
-      progress = round(trainer.global_step / trainer.estimated_stepping_batches * 100)
+      progress = math.floor(trainer.global_step / trainer.estimated_stepping_batches * 100)
       self.set_metadata("trainingProgress", progress)
-      self.set_metadata("trainingDone", False)
 
       # Set up WebDAV connection
       dav = Client({

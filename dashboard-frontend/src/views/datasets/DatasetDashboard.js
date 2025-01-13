@@ -23,6 +23,7 @@ import StopTrainModal from "../sessions/StopTrainModal";
 import DeleteTrainModal from "../sessions/DeleteTrainModal";
 import LogsModal from "../sessions/LogsModal";
 import GenerateModal from "../sessions/GenerateModal";
+import DetailsModal from "../sessions/DetailsModal";
 
 
 const DatasetDashboard = () => {
@@ -36,6 +37,7 @@ const DatasetDashboard = () => {
   const [startTrainVisible, setStartTrainVisible] = useState(false);
   const [stopTrainVisible, setStopTrainVisible] = useState(false);
   const [deleteTrainVisible, setDeleteTrainVisible] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(false);
   const [logsVisible, setLogsVisible] = useState(false);
 
   const [selectedSession, setSelectedSession] = useState(null);
@@ -158,55 +160,58 @@ const DatasetDashboard = () => {
         .filter(([key]) => key.startsWith('hyperparameter:'))
         .map(([key, value]) => `${key.replace("hyperparameter:", "")}=${value}`)
         .join(", ");
-      if (model.trainingDone == false) {
-        accordionItems.push(
-          <CAccordionItem key={model.sessionName} itemKey={model.sessionName}>
-            <CAccordionHeader>{model.sessionName}<CBadge className="m-1" color="secondary">{model.trainingProgress}%</CBadge></CAccordionHeader>
-            <CAccordionBody>
-              Preprocessing: {model.preprocessing}
-              <br />
-              Model: {model.model}
-              <br />
-              Hyperparameters: {hyperparameters}
-              <br />
-              SSH server: {model.sshServer}
-              <br />
-              <CButton type="submit" color="primary" onClick={() => {
-                setSelectedSession(model);
-                setLogsVisible(true);
-              }}>Logs</CButton>
-              <CButton type="submit" color="primary" className="ms-2" onClick={() => {
-                setSelectedSession(model);
-                setStopTrainVisible(true);
-              }}>Stop training</CButton>
-            </CAccordionBody>
-          </CAccordionItem>)
-      } else {
-        accordionItems.push(
-          <CAccordionItem key={model.sessionName} itemKey={model.sessionName}>
-            <CAccordionHeader>{model.sessionName} </CAccordionHeader>
-            <CAccordionBody>
-              Preprocessing: {model.preprocessing}
-              <br />
-              Model: {model.model}
-              <br />
-              Hyperparameters: {hyperparameters}
-              <br />
-              SSH server: {model.sshServer}
-              <br />
-              <CButton type="submit" color="primary" onClick={() => {
-                setSelectedSession(model);
-                setGenerateVisible(true);
-              }}>Generate image</CButton>
-              <CButton type="submit" color="primary" className="ms-2">Details</CButton>
-              <CButton type="submit" color="primary" className="ms-2" onClick={() => {
-                setSelectedSession(model);
-                setDeleteTrainVisible(true);
-              }}>Delete</CButton>
-            </CAccordionBody>
-          </CAccordionItem>
-        )
-      }
+      accordionItems.push(
+        <CAccordionItem key={model.sessionName} itemKey={model.sessionName}>
+          <CAccordionHeader>{model.sessionName}
+            {
+              model.uploadDone ? null : (
+                model.trainingProgress == "100" ? <CBadge className="m-1" color="primary">UPLOADING</CBadge> :
+                  <CBadge className="m-1" color="secondary">{model.trainingProgress}%</CBadge>)
+            }
+          </CAccordionHeader>
+          <CAccordionBody>
+            Preprocessing: {model.preprocessing}
+            <br />
+            Model: {model.model}
+            <br />
+            Hyperparameters: {hyperparameters}
+            <br />
+            SSH server: {model.sshServer}
+            <br />
+            {
+              model.trainingProgress == "100" ?
+                <>
+                  <CButton type="submit" color="primary" onClick={() => {
+                    setSelectedSession(model);
+                    setGenerateVisible(true);
+                  }}>Generate image</CButton>
+                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
+                    setSelectedSession(model);
+                    setDetailsVisible(true);
+                  }}>Details</CButton>
+                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
+                    setSelectedSession(model);
+                    setDeleteTrainVisible(true);
+                  }}>Delete</CButton>
+                </>
+                :
+                <>
+                  <CButton type="submit" color="primary" onClick={() => {
+                    setSelectedSession(model);
+                    setLogsVisible(true);
+                  }}>Logs</CButton>
+                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
+                    setSelectedSession(model);
+                    setDetailsVisible(true);
+                  }}>Details</CButton>
+                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
+                    setSelectedSession(model);
+                    setStopTrainVisible(true);
+                  }}>Stop training</CButton>
+                </>
+            }
+          </CAccordionBody>
+        </CAccordionItem>)
     }
     return accordionItems
   }
@@ -266,6 +271,7 @@ const DatasetDashboard = () => {
       <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} dataset={id} />
       <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
       <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
+      <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} session={selectedSession} dataset={id} />
       <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} session={selectedSession} />
 
       <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={trainedModels} session={selectedSession} dataset={id} />

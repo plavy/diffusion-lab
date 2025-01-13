@@ -61,7 +61,6 @@ router.get('/:id', async (req, res) => {
   const id = req.params.id;
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
-    const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
     res.json(metadata);
   } catch (error) {
     res.status(500);
@@ -173,6 +172,7 @@ router.post('/:id/sync', async (req, res) => {
   }
 });
 
+// Clear cache
 router.delete('/:id/cache', async (req, res) => {
   const id = req.params.id;
   try {
@@ -249,8 +249,6 @@ router.get('/:id/train/:sessionName/logs', async (req, res) => {
   const id = req.params.id;
   const sessionName = req.params.sessionName;
   try {
-    console.log('trying logging');
-
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
@@ -260,10 +258,9 @@ router.get('/:id/train/:sessionName/logs', async (req, res) => {
     ssh.close();
     res.send(response);
   } catch (error) {
-    res.status(500).send(error);
-    console.error('Error for /servers/:id/train/:sessionName/logs for', id, ':', error);
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/train/:sessionName/logs for', id, ':', error.message || error);
   }
-
 });
 
 // Generate images

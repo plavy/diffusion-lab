@@ -120,7 +120,7 @@ def train(args):
     })
 
     set_metadata(args.metadata_file, "trainingProgress", 0)
-    set_metadata(args.metadata_file, "trainingDone", False)
+    set_metadata(args.metadata_file, "uploadDone", False)
     dav.upload_sync(local_path=args.training_dir, remote_path=args.training_dir)
 
     # Set up hyperparameters
@@ -177,7 +177,7 @@ def train(args):
         dav.upload_sync(local_path=file_path, remote_path=file_path)
     
     # Mark training as done
-    set_metadata(args.metadata_file, "trainingDone", True)
+    set_metadata(args.metadata_file, "uploadDone", True)
     dav.upload_sync(local_path=args.metadata_file, remote_path=args.metadata_file)
     print('Done.')
 
