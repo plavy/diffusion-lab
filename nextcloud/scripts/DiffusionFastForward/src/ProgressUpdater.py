@@ -1,5 +1,5 @@
 import json
-import asyncio
+from multiprocessing import Process
 
 from pytorch_lightning import Callback
 from webdav3.client import Client
@@ -8,7 +8,6 @@ from webdav3.client import Client
 class ProgressUpdater(Callback):
   def __init__(self, args):
     self.args = args
-    self.loop = asyncio.get_event_loop()
 
   def get_metadata(self):
     with open(self.args.metadata_file, 'r') as f:
@@ -20,9 +19,6 @@ class ProgressUpdater(Callback):
       metadata[key] = value
       with open(self.args.metadata_file, 'w') as f:
           json.dump(metadata, f, indent=2)
-
-  async def async_upload(self, trainer):
-    await asyncio.to_thread(self.updata_progress, trainer)
 
   def updata_progress(self, trainer):
     try:
@@ -41,4 +37,4 @@ class ProgressUpdater(Callback):
       print('WARN WebDAV server unreachable. Skipping.')
 
   def on_train_epoch_end(self, trainer, pl_module):
-    asyncio.run_coroutine_threadsafe(self.async_upload(trainer), self.loop)
+    Process(target=self.updata_progress, args=(trainer,)).start()
