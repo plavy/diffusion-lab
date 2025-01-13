@@ -16,7 +16,9 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
   const getLogs = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
-    axios.get(`${getBackendURL()}/datasets/${dataset}/models/${session.sessionName}/metrics`, {
+    const metricsUrl = session.uploadDone ? `${getBackendURL()}/datasets/${dataset}/models/${session.sessionName}/metrics`
+      : `${getBackendURL()}/servers/${session.sshServer}/train/${session.sessionName}/metrics?dataset=${dataset}`
+    axios.get(metricsUrl, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -59,13 +61,13 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
         : null
       }
       {metrics ? <>
-        <TrainingGraph epoch={metrics.epoch} trainLoss={metrics.train_loss} valLoss={metrics.val_loss} clearView={clearView}/>
+        <TrainingGraph epoch={metrics.epoch} trainLoss={metrics.train_loss} valLoss={metrics.val_loss} clearView={clearView} />
       </>
         : null
       }
     </CModalBody>
     <CModalFooter>
-      <CFormSwitch id="clear-view-check2" className="me-1" label="Clear view" checked={clearView}  onChange={handleClearViewChange} />
+      <CFormSwitch id="clear-view-check2" className="me-1" label="Clear view" checked={clearView} onChange={handleClearViewChange} />
       <div className="separator flex-grow-1"></div>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Close</CButton>
     </CModalFooter>

@@ -6,7 +6,7 @@ const pLimit = require('p-limit');
 
 const SSH2Promise = require('ssh2-promise');
 const SCPClient = require('node-scp').Client;
-const { toSSHConfig, ensureVariable } = require('../utils');
+const { toSSHConfig, ensureVariable, parseCsv } = require('../utils');
 
 const serverDir = 'diffusion-lab/ssh-servers/';
 const metadataFile = 'metadata.json';
@@ -262,6 +262,29 @@ router.get('/:id/train/:sessionName/logs', async (req, res) => {
     console.error('Error for /servers/:id/train/:sessionName/logs for', id, ':', error.message || error);
   }
 });
+
+// Get training metrics
+router.get('/:id/train/:sessionName/metrics', async (req, res) => {
+  const id = req.params.id;
+  const sessionName = req.params.sessionName;
+  try {
+    const datasetId = ensureVariable("Dataset", req.query.dataset);
+    const cwd = `${trainedModelsDir}/${datasetId}/${sessionName}`
+
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+    const ssh = new SSH2Promise(sshConfig);
+
+    const response = await ssh.exec(`cat ${cwd}/lightning_logs/version_0/metrics.csv`);
+    ssh.close();
+    res.json(parseCsv(response));
+  } catch (error) {
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/train/:sessionName/metrics for', id, ':', error.message || error);
+  }
+});
+
+
 
 // Generate images
 router.post('/:id/generate/:name', async (req, res) => {

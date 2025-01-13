@@ -1,4 +1,5 @@
 const express = require('express');
+const { parseCsv } = require('../utils');
 const router = express.Router();
 const DAVClient = require('webdav').createClient;
 
@@ -114,22 +115,7 @@ router.get('/:id/models/:sessionName/metrics', async (req, res) => {
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const response = await dav.getFileContents(trainedModelsDir + id + "/" + sessionName + "/lightning_logs/version_0/metrics.csv", { format: "text" });
-
-    // Parse CSV to JSON
-    const lines = response.trim().split('\r\n');
-    const headers = lines[0].split(',');
-    const columns = headers.reduce((acc, header) => {
-      acc[header] = [];
-      return acc;
-    }, {});
-    lines.slice(1).forEach((line) => {
-      const values = line.split(',');
-      values.forEach((value, index) => {
-        columns[headers[index]].push(value);
-      });
-    });
-
-    res.json(columns);
+    res.json(parseCsv(response));
   } catch (error) {
     res.status(500).send(error.message || error);
     console.error('Error for /:id/models/:sessionName/metrics for', id, ':', error.message || error);
