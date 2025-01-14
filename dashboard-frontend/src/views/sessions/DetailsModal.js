@@ -23,7 +23,9 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then(res => { setMetrics(res.data); setWaitingRespone(false); })
+      .then(res => {
+        setMetrics(res.data);
+        setWaitingRespone(false); })
       .catch(error => {
         setErrorMessage(error.response.data)
         setWaitingRespone(false);

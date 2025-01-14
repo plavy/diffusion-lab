@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
-import { CAlert, CButton, CCol, CForm, CFormInput, CFormSelect, CImage, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CPlaceholder, CProgress, CRow } from "@coreui/react";
+import { useEffect, useRef, useState } from "react";
+import { getAuthHeader, getBackendURL } from "../../utils";
+import { CAlert, CButton, CCol, CForm, CFormInput, CFormSelect, CImage, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CRow } from "@coreui/react";
 import { cilWarning } from "@coreui/icons";
 import LoadingButton from "../../components/LoadingButton";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
-import { getStyle } from "@coreui/utils";
+import ProgressPlaceholder from "../../components/ProgressPlaceholder";
 
 const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, sessions, dataset }) => {
   const [watingResponse, setWaitingRespone] = useState(false);
@@ -33,8 +33,8 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
         }
       }
       setFormData(newFormData);
-      setProgress(0);
-      setProgressRequestParam(null);
+      // setProgress(0);
+      // setProgressRequestParam(null);
       setImageSrcList([]);
       setFormVisible(true);
     } else {
@@ -45,10 +45,18 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
         "numberImages": "4",
         "sshServer": "",
       });
+      clearInterval(progressInterval.current);
+      clearInterval(progressUpdateInterval.current);
     }
   }, [modalVisible]);
 
   const [imageSrcList, setImageSrcList] = useState([]);
+
+  // Generation progress
+  const [progress, setProgress] = useState(0);
+  const progressInterval = useRef(null);
+  const progressUpdateInterval = useRef(null);
+  const latestProgress = useRef(0);
 
   const handleChange = (e) => {
     setFormData({
@@ -57,12 +65,38 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
     });
   };
 
+
   const handleSubmit = async (e) => {
+    const timestamp = Date.now();
+
     setWaitingRespone(true);
     setErrorMessage("");
     setFormVisible(false);
+
+    // Progress setup
+    setProgress(0);
+    latestProgress.current = 0;
+    progressUpdateInterval.current = setInterval(() => {
+      setProgress(latestProgress.current); // Update progress every 2 seconds
+      if (latestProgress.current == 100) {
+        clearInterval(progressUpdateInterval.current);
+      }
+    }, 2000);
+    progressInterval.current = setInterval(() => {
+      axios.get(`${getBackendURL()}/servers/${formData.sshServer}/generate/${timestamp}/progress`, {
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        },
+      }).then(res => {
+        const progress = Number(res.data)
+        latestProgress.current = progress;
+        if (progress == 100) {
+          clearInterval(progressInterval.current);
+        }
+      })
+    }, 2000);
+
     setImageSrcList(new Array(Number(formData.numberImages)).fill(null));
-    const timestamp = Date.now();
     const body = { ...formData };
     body['datasetId'] = dataset;
     axios.post(`${getBackendURL()}/servers/${formData.sshServer}/generate/${timestamp}`, body, {
@@ -87,10 +121,12 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
               });
             })
             .catch(error => {
-              setErrorMessage(error.response.data)
+              setErrorMessage(error.response.data);
               setWaitingRespone(false);
               setFormVisible(true);
               setImageSrcList([]);
+              clearInterval(progressInterval.current);
+              clearInterval(progressUpdateInterval.current);
             })
         }
       })
@@ -99,41 +135,10 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
         setWaitingRespone(false);
         setFormVisible(true);
         setImageSrcList([]);
+        clearInterval(progressInterval.current);
+        clearInterval(progressUpdateInterval.current);
       });
-    setProgress(0);
-    setProgressRequestParam(timestamp);
   }
-
-
-  // Track generation progress
-  const [progress, setProgress] = useState(0);
-  const [progressRequestParam, setProgressRequestParam] = useState(null);
-  useEffect(() => {
-    let updateProgress = true;
-
-    if (modalVisible && progressRequestParam) {
-      const interval = setInterval(() => {
-        axios.get(`${getBackendURL()}/servers/${formData.sshServer}/generate/${progressRequestParam}/progress`, {
-          headers: {
-            Authorization: getAuthHeader() // Encrypted by TLS
-          },
-        }).then(res => {
-          if (updateProgress) {
-            const progress = Number(res.data);
-            setProgress(progress);
-            if (progress == 100) {
-              updateProgress = false;
-              setProgressRequestParam(null);
-            }
-          }
-        })
-      }, 1000);
-      return () => {
-        updateProgress = false;
-        clearInterval(interval);
-      }
-    }
-  }, [modalVisible, progressRequestParam]);
 
   const ImagesGenerate = () => {
     let images = [];
@@ -141,11 +146,8 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
       if (imageSrcList[i]) {
         images.push(<CCol className="p-1" key={i}><CImage className="w-100" fluid src={imageSrcList[i]} /></CCol>)
       } else {
-        images.push(<CCol className="position-relative p-1" key={i}>
-          <CProgress className="w-100 h-100 ratio ratio-1x1 bg-transparent" value={progress} />
-          <CPlaceholder as="div" className="position-absolute w-100 h-100 top-0 left-0 p-1" style={{backgroundColor: getStyle('--cui-modal-bg')}} animation="wave">
-            <CPlaceholder className="w-100 h-100 rounded-2"></CPlaceholder>
-          </CPlaceholder>
+        images.push(<CCol className="p-1" key={i}>
+          <ProgressPlaceholder progress={progress} />
         </CCol>)
       }
     }

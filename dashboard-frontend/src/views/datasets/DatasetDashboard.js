@@ -151,7 +151,7 @@ const DatasetDashboard = () => {
   }, [autoRefresh])
   useEffect(() => {
     getTrainedModels();
-  }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, activeAccordionItem]);
+  }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, detailsVisible, activeAccordionItem]);
 
   const AccordionItems = () => {
     let accordionItems = [];
@@ -180,22 +180,25 @@ const DatasetDashboard = () => {
             <br />
             {
               model.trainingProgress == "100" ?
-                <>
+                <div className="d-flex flex-row flex-wrap gap-2">
                   <CButton type="submit" color="primary" onClick={() => {
                     setSelectedSession(model);
                     setGenerateVisible(true);
                   }}>Generate image</CButton>
-                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
+                  <CButton type="submit" color="primary" onClick={() => {
                     setSelectedSession(model);
                     setDetailsVisible(true);
                   }}>Details</CButton>
-                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
-                    setSelectedSession(model);
-                    setDeleteTrainVisible(true);
-                  }}>Delete</CButton>
-                </>
+                  {
+                    model.uploadDone ? <CButton type="submit" color="primary" onClick={() => {
+                      setSelectedSession(model);
+                      setDeleteTrainVisible(true);
+                    }}>Delete</CButton>
+                      : null
+                  }
+                </div>
                 :
-                <>
+                <div className="d-flex flex-row flex-wrap gap-2">
                   <CButton type="submit" color="primary" onClick={() => {
                     setSelectedSession(model);
                     setLogsVisible(true);
@@ -208,7 +211,7 @@ const DatasetDashboard = () => {
                     setSelectedSession(model);
                     setStopTrainVisible(true);
                   }}>Stop training</CButton>
-                </>
+                </div>
             }
           </CAccordionBody>
         </CAccordionItem>)
@@ -240,7 +243,7 @@ const DatasetDashboard = () => {
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
 
-          <div className="mt-3 d-flex flex-row gap-3">
+          <div className="mt-2 d-flex flex-row gap-2">
             <CButton type="submit" color="primary" action="#">Add new image</CButton>
             <CButton type="submit" color="primary" action="#">Take a photo</CButton>
           </div>
@@ -250,14 +253,14 @@ const DatasetDashboard = () => {
           <h2>Trained models</h2>
 
           <div className="flex-grow-1 overflow-auto">
-            <CAccordion activeItemKey={activeAccordionItem}>
+            <CAccordion>
               {trainedModelsReady ? <AccordionItems /> : <div className="pt-3 text-center">
                 <CSpinner color="primary" variant="grow" />
               </div>}
             </CAccordion>
           </div>
 
-          <div className="d-flex flex-row gap-3 justify-content-center">
+          <div className="d-flex flex-row flex-wrap gap-2 justify-content-center mt-2">
             <CButton color="primary" size='lg' onClick={() => {
               setStartTrainVisible(true);
             }}>Train new model</CButton>

@@ -50,8 +50,10 @@ export const TrainingGraph = ({ epoch, trainLoss, valLoss, clearView }) => {
 
 
   let epochProccessed = epoch;
-  let trainLossProccessed = trainLoss.map(el => el == 0 ? null : el);
-  let valLossNullProccessed = valLoss.map(el => el == 0 ? null : el);
+  let trainLossProccessed = trainLoss || [];
+  let valLossNullProccessed = valLoss || [];
+  trainLossProccessed = trainLossProccessed.map(el => el == 0 ? null : el);
+  valLossNullProccessed = valLossNullProccessed.map(el => el == 0 ? null : el);
 
   if (clearView) {
     const dropCondition = (index) => index % Math.ceil((index + 1) / 100) == 0;

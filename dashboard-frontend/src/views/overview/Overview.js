@@ -6,6 +6,7 @@ import { cilCheck, cilWarning } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
+import ProgressPlaceholder from "../../components/ProgressPlaceholder";
 
 const Overview = () => {
   const dispatch = useDispatch();
@@ -85,6 +86,8 @@ const Overview = () => {
           <div>{datasetList.length} datasets</div>
           <CButton color="primary mt-3">Add new dataset</CButton>
         </div>
+
+        <ProgressPlaceholder/>
 
         <div className="flex-grow-1 d-flex flex-row flex-wrap gap-3 mt-3" style={{ height: 0 }}>
 
