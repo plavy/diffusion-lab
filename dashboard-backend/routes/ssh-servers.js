@@ -61,13 +61,13 @@ router.get('/:id', async (req, res) => {
   const id = req.params.id;
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
     res.json(metadata);
   } catch (error) {
     res.status(500);
     res.send(error.message);
     console.error('Error for GET /servers/:id for', id, ':', error.message);
   }
-
 });
 
 // Update config of SSH server
