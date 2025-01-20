@@ -1,0 +1,7 @@
+{
+  "id": "supek",
+  "name": "Supek",
+  "hostname": "login-gpu.hpc.srce.hr",
+  "port": "22",
+  "username": "tplavec"
+}
