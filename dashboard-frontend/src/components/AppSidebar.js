@@ -29,8 +29,8 @@ const AppSidebar = () => {
   const datasetList = useSelector((state) => state.datasetList);
   const serverList = useSelector((state) => state.serverList);
   useEffect(() => {
-    updateDatasetList(dispatch);
-    updateServerList(dispatch);
+    // updateDatasetList(dispatch);
+    // updateServerList(dispatch);
   }, []);
 
   useEffect(() => {

@@ -6,7 +6,6 @@ import { cilCheck, cilWarning } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
-import ProgressPlaceholder from "../../components/ProgressPlaceholder";
 
 const Overview = () => {
   const dispatch = useDispatch();
@@ -16,7 +15,7 @@ const Overview = () => {
   const [davStatus, setDavStatus] = useState(null);
   const updateDavStatus = () => {
     setDavStatus(null);
-    axios.get(`${getBackendURL()}/servers`, {
+    axios.get(`${getBackendURL()}/datasets`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -49,11 +48,11 @@ const Overview = () => {
   }, []);
 
   const [serverStatus, setServerStatus] = useState({});
-  const [lastCall, setLastCall] = useState(0);
+  // const [lastCall, setLastCall] = useState(0);
   useEffect(() => {
-    const now = new Date().getTime();
-    if (now - lastCall >= 10000) {
-      setLastCall(now);
+    // const now = new Date().getTime();
+    // if (now - lastCall >= 10000) {
+      // setLastCall(now);
       for (const server of serverList) {        
         axios.get(`${getBackendURL()}/servers/${server.id}/status`, {
           headers: {
@@ -62,7 +61,7 @@ const Overview = () => {
         }).then((res) => {
           setServerStatus(prev => ({...prev, [server.id]: res.data}))});
       }
-    }
+    // }
   }, [serverList]);
 
   const ServerStatus = ({ serverId }) => {
@@ -86,8 +85,6 @@ const Overview = () => {
           <div>{datasetList.length} datasets</div>
           <CButton color="primary mt-3">Add new dataset</CButton>
         </div>
-
-        <ProgressPlaceholder/>
 
         <div className="flex-grow-1 d-flex flex-row flex-wrap gap-3 mt-3" style={{ height: 0 }}>
 

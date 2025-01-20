@@ -6,7 +6,7 @@ import {useNavigate} from 'react-router-dom'
 const Login = () => {
 
     const [formData, setFormData] = useState({
-        "url": getAuth()["url"] || "",
+        "url": getAuth() ? getAuth().url : "",
         "username": "",
         "password": "",
     });

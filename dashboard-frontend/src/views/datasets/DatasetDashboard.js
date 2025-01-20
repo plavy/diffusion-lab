@@ -203,11 +203,11 @@ const DatasetDashboard = () => {
                     setSelectedSession(model);
                     setLogsVisible(true);
                   }}>Logs</CButton>
-                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
+                  <CButton type="submit" color="primary" onClick={() => {
                     setSelectedSession(model);
                     setDetailsVisible(true);
                   }}>Details</CButton>
-                  <CButton type="submit" color="primary" className="ms-2" onClick={() => {
+                  <CButton type="submit" color="primary" onClick={() => {
                     setSelectedSession(model);
                     setStopTrainVisible(true);
                   }}>Stop training</CButton>

@@ -5,10 +5,11 @@ import { cilWarning } from "@coreui/icons";
 import LoadingButton from "../../components/LoadingButton";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
+import { data } from "autoprefixer";
 
 const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset }) => {
   const [formData, setFormData] = useState({
-    "dataset": dataset,
+    "dataset": "",
     "preprocessing": "crop",
     "model": "pixel-diffusion",
     "hyperparameter:learningRate": "1e-10",
@@ -28,6 +29,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset })
           newFormData["sshServer"] = serverList[0].id;
         }
       }
+      newFormData["dataset"] = dataset;
       newFormData["sessionName"] = `model-${getDateTime()}`;
       setFormData(newFormData);
     } else {

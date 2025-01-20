@@ -1,8 +1,10 @@
-import { CButton, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from "@coreui/react";
+import { CAlert, CButton, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from "@coreui/react";
 import { getAuthHeader, getBackendURL } from "../../utils";
 import LoadingButton from "../../components/LoadingButton";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import CIcon from "@coreui/icons-react";
+import { cilWarning } from "@coreui/icons";
 
 const StopTrainModal = ({ modalVisible, setModalVisible, session }) => {
 
@@ -11,7 +13,7 @@ const StopTrainModal = ({ modalVisible, setModalVisible, session }) => {
   const stopTraining = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
-    axios.delete(`${getBackendURL()}/servers/${session.server}/train/${session.sessionName}`, {
+    axios.delete(`${getBackendURL()}/servers/${session.sshServer}/train/${session.sessionName}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }

@@ -57,6 +57,8 @@ export function getLocal(key) {
 }
 
 export function logout() {
+    localStorage.removeItem('datasets');
+    localStorage.removeItem('servers');
     storeAuth({
         url: getAuth().url
     });

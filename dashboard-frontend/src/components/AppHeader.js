@@ -109,7 +109,7 @@ const AppHeader = () => {
           </CDropdown>
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle className="pe-0" caret={false}>
-              {(getAuth()["username"] && getAuth()["url"]) ?
+              {(getAuth() && getAuth().username && getAuth().url) ?
                 (getAuth().username + '@' + getAuth().url).split('/')[0] : "Not logged in"
               }
             </CDropdownToggle>
