@@ -149,51 +149,53 @@ router.post('/:id/sync', async (req, res) => {
     const files_to_create = storage_files.filter(el => !server_files.includes(el));
 
     console.time('syncDatasets');
+    if (files_to_delete.length > 0) {
+      console.time('rmFiles');
+      await ssh.exec(`rm ${files_to_delete.map(file => `"${file}"`).join(' ')}`);
+      console.timeEnd('rmFiles');
+    }
+    if (dirs_to_delete.length > 0) {
+      console.time('rmDirs');
+      for (const dir of dirs_to_delete.reverse()) {
+        await ssh.exec(`rmdir ${dir}`);
+      }
+      console.timeEnd('rmDirs');
+    }
+    if (dirs_to_create.length > 0) {
+      console.time('createDirs');
+      for (const dir of dirs_to_create) {
+        await ssh.exec(`mkdir -p ${dir}`);
+      }
+      console.timeEnd('createDirs');
+    }
 
-    console.time('rmFiles');
-    for (const file of files_to_delete) {
-      await ssh.exec(`rm ${file}`);
-    }
-    console.timeEnd('rmFiles');
-    console.time('rmDirs');
-    for (const dir of dirs_to_delete) {
-      await ssh.exec(`rmdir ${dir}`);
-    }
-    console.timeEnd('rmDirs');
-    console.time('createDirs');
-    for (const dir of dirs_to_create) {
-      await ssh.exec(`mkdir -p ${dir}`);
-    }
-    console.timeEnd('createDirs');
-
-    console.time('createFiles');
     const concurrencyLimit = pLimit(32);
-    const create_files = files_to_create.map(async file => concurrencyLimit(async () => {
-      const file_content = await dav.getFileContents(file);
-      await scp.writeFile(file, file_content);
-    }));
-    await Promise.all(create_files);
-    console.timeEnd('createFiles');
-    
+    if (files_to_create.length > 0) {
+      console.time('createFiles');
+      const create_files = files_to_create.map(async file => concurrencyLimit(async () => {
+        const file_content = await dav.getFileContents(file);
+        await scp.writeFile(file, file_content);
+      }));
+      await Promise.all(create_files);
+      console.timeEnd('createFiles');
+    }
     console.timeEnd('syncDatasets');
 
-
     // Scripts
-    const response1 = await dav.getDirectoryContents(scriptsDir, { deep: true });
-    const dirs = response1.filter(file => file.type == 'directory');
-    const files = response1.filter(file => file.type == 'file');
+    const scripts_list = await dav.getDirectoryContents(scriptsDir, { deep: true });
+    const dirs = scripts_list.filter(file => file.type == 'directory').map(file => file.filename.replace(/^\/+/, ''));
+    const files = scripts_list.filter(file => file.type == 'file').map(file => file.filename.replace(/^\/+/, ''));
     // Remove old scripts, if exist, except venv
     await ssh.exec(`if [[ -d ${scriptsDir} ]]; then find ${scriptsDir} -mindepth 1 -maxdepth 1 ! -name 'venv' -exec rm -r {} +; fi`);
     // Create scripts dirs
     for (const dir of dirs) {
-      await ssh.exec(`mkdir -p ${dir.filename.replace(/^\/+/, '')}`);
+      await ssh.exec(`mkdir -p ${dir}`);
     }
     // Create scripts files
     console.time('syncScripts');
-    
     const tasks = files.map(async file => concurrencyLimit(async () => {
-      const response2 = await dav.getFileContents(file.filename);
-      await scp.writeFile(file.filename.replace(/^\/+/, ''), response2); // Remove slash from beginning
+      const file_content = await dav.getFileContents(file);
+      await scp.writeFile(file, file_content);
     }));
     await Promise.all(tasks);
     console.timeEnd('syncScripts');
@@ -207,7 +209,7 @@ router.post('/:id/sync', async (req, res) => {
     ssh.close();
   } catch (error) {
     res.status(500).json({ code: 1 });
-    console.error('Error for /servers/:id/sync for', id, ':', error.message);
+    console.error('Error for /servers/:id/sync for', id, ':', error.message || error);
   }
 });
 
