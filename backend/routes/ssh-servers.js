@@ -130,36 +130,75 @@ router.get('/:id/status', async (req, res) => {
 router.post('/:id/sync', async (req, res) => {
   const id = req.params.id;
   try {
-
     const dav = DAVClient(req.auth.baseUrl, req.auth);
-    const response1 = await dav.getDirectoryContents(scriptsDir, { deep: true });
-    const dirs = response1.filter(file => file.type == 'directory');
-    const files = response1.filter(file => file.type == 'file');
 
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
+    const scp = await SCPClient(sshConfig);
 
-    try {
-      // Remove old files, if exist, except venv
-      await ssh.exec(`if [[ -d ${scriptsDir} ]]; then find ${scriptsDir} -mindepth 1 -maxdepth 1 ! -name 'venv' -exec rm -r {} +; fi`);
-      // Create directories
-      for (const dir of dirs) {
-        await ssh.exec(`mkdir -p ${dir.filename.replace(/^\/+/, '')}`);
-      }
-      // Create files
-      const scp = await SCPClient(sshConfig);
-      console.time('syncServer');
-      const concurrencyLimit = pLimit(10);
-      const tasks = files.map(async file => concurrencyLimit(async () => {
-        const response2 = await dav.getFileContents(file.filename);
-        await scp.writeFile(file.filename.replace(/^\/+/, ''), response2); // Remove slash from beginning
-      }));
-      await Promise.all(tasks);
-      console.timeEnd('syncServer');
-      scp.close();
-    } catch (error) {
-      console.error('Error for /servers/:id/sync for', id, ':', error);
+    // Datasets
+    const storage_list = await dav.getDirectoryContents(datasetDir, { deep: true });
+    const storage_dirs = storage_list.filter(file => file.type == 'directory').map(file => file.filename.replace(/^\/+/, ''));
+    const storage_files = storage_list.filter(file => file.type == 'file').map(file => file.filename.replace(/^\/+/, ''));
+    const server_dirs = (await ssh.exec(`find ${datasetDir} -mindepth 1 -type d`)).trim().split('\n');
+    const server_files = (await ssh.exec(`find ${datasetDir} -type f`)).trim().split('\n');
+
+    const files_to_delete = server_files.filter(el => !storage_files.includes(el));
+    const dirs_to_delete = server_dirs.filter(el => !storage_dirs.includes(el));
+    const dirs_to_create = storage_dirs.filter(el => !server_dirs.includes(el));
+    const files_to_create = storage_files.filter(el => !server_files.includes(el));
+
+    console.time('syncDatasets');
+
+    console.time('rmFiles');
+    for (const file of files_to_delete) {
+      await ssh.exec(`rm ${file}`);
     }
+    console.timeEnd('rmFiles');
+    console.time('rmDirs');
+    for (const dir of dirs_to_delete) {
+      await ssh.exec(`rmdir ${dir}`);
+    }
+    console.timeEnd('rmDirs');
+    console.time('createDirs');
+    for (const dir of dirs_to_create) {
+      await ssh.exec(`mkdir -p ${dir}`);
+    }
+    console.timeEnd('createDirs');
+
+    console.time('createFiles');
+    const concurrencyLimit = pLimit(32);
+    const create_files = files_to_create.map(async file => concurrencyLimit(async () => {
+      const file_content = await dav.getFileContents(file);
+      await scp.writeFile(file, file_content);
+    }));
+    await Promise.all(create_files);
+    console.timeEnd('createFiles');
+    
+    console.timeEnd('syncDatasets');
+
+
+    // Scripts
+    const response1 = await dav.getDirectoryContents(scriptsDir, { deep: true });
+    const dirs = response1.filter(file => file.type == 'directory');
+    const files = response1.filter(file => file.type == 'file');
+    // Remove old scripts, if exist, except venv
+    await ssh.exec(`if [[ -d ${scriptsDir} ]]; then find ${scriptsDir} -mindepth 1 -maxdepth 1 ! -name 'venv' -exec rm -r {} +; fi`);
+    // Create scripts dirs
+    for (const dir of dirs) {
+      await ssh.exec(`mkdir -p ${dir.filename.replace(/^\/+/, '')}`);
+    }
+    // Create scripts files
+    console.time('syncScripts');
+    
+    const tasks = files.map(async file => concurrencyLimit(async () => {
+      const response2 = await dav.getFileContents(file.filename);
+      await scp.writeFile(file.filename.replace(/^\/+/, ''), response2); // Remove slash from beginning
+    }));
+    await Promise.all(tasks);
+    console.timeEnd('syncScripts');
+
+    scp.close();
 
     console.time('runSetup');
     await ssh.exec(`cd ${scriptsDir}; bash ~/${scriptsDir}/setup.sh;`);

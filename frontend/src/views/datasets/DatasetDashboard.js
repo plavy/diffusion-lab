@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal, updateDatasetList, updateServerList } from "../../utils";
+import { getAuthHeader, getBackendURL, getLocal, updateDatasetList, updateServerList } from "../../utils";
 import { useSelector, useDispatch } from 'react-redux';
 
 import {
@@ -50,24 +50,10 @@ const DatasetDashboard = () => {
 
   const autoRefresh = useSelector((state) => state.autoRefresh)
   const serverList = useSelector((state) => state.serverList);
-
+  
   useEffect(() => {
-    const servers = getLocal('servers');
-    if (servers) {
-      dispatch({ type: 'set', serverList: servers });
-    }
-    axios.get(`${getBackendURL()}/servers`, {
-      headers: {
-        Authorization: getAuthHeader() // Encrypted by TLS
-      }
-    })
-      .then((res) => {
-        dispatch({ type: 'set', serverList: res.data });
-        storeLocal('servers', res.data);
-      });
-  }, []);
-
-  useEffect(() => {
+    updateDatasetList(dispatch);
+    updateServerList(dispatch);
     setSiteReady(false);
     setTrainedModelsReady(false);
     setSelectedSession(null);
@@ -145,7 +131,7 @@ const DatasetDashboard = () => {
     if (autoRefresh) {
       const interval = setInterval(() => {
         getTrainedModels();
-      }, 2000);
+      }, 5000);
       return () => clearInterval(interval);
     }
   }, [autoRefresh])
