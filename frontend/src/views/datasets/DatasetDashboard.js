@@ -50,7 +50,7 @@ const DatasetDashboard = () => {
 
   const autoRefresh = useSelector((state) => state.autoRefresh)
   const serverList = useSelector((state) => state.serverList);
-  
+
   useEffect(() => {
     updateDatasetList(dispatch);
     updateServerList(dispatch);
@@ -87,7 +87,7 @@ const DatasetDashboard = () => {
   // Dataset images
   useEffect(() => {
     setImageSrcList([]);
-    axios.get(`${getBackendURL()}/datasets/${id}/images/train`, {
+    axios.get(`${getBackendURL()}/datasets/${id}/images`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -95,7 +95,7 @@ const DatasetDashboard = () => {
       .then(res => {
         const images = res.data;
         for (let i = 0; i < 10; i++) {
-          axios.get(`${getBackendURL()}/datasets/${id}/images/train/${images[i]}`, {
+          axios.get(`${getBackendURL()}/datasets/${id}/images/${images[i]}`, {
             headers: {
               Authorization: getAuthHeader() // Encrypted by TLS
             },
@@ -131,7 +131,7 @@ const DatasetDashboard = () => {
     if (autoRefresh) {
       const interval = setInterval(() => {
         getTrainedModels();
-      }, 5000);
+      }, 4000);
       return () => clearInterval(interval);
     }
   }, [autoRefresh])
@@ -228,11 +228,11 @@ const DatasetDashboard = () => {
             </CRow>
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
-
+{/* 
           <div className="mt-2 d-flex flex-row gap-2">
             <CButton type="submit" color="primary" action="#">Add new image</CButton>
             <CButton type="submit" color="primary" action="#">Take a photo</CButton>
-          </div>
+          </div> */}
         </div>
 
         <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2, minWidth: "300px" }}>

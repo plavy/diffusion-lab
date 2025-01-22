@@ -150,8 +150,16 @@ router.post('/:id/sync', async (req, res) => {
 
     console.time('syncDatasets');
     if (files_to_delete.length > 0) {
+      // Slice large array to avoid bash command too long
+      const chunk_size = 100
+      const chunks = [];
+      for (let i = 0; i < files_to_delete.length; i += chunk_size) {
+        chunks.push(files_to_delete.slice(i, i + chunk_size));
+      }
       console.time('rmFiles');
-      await ssh.exec(`rm ${files_to_delete.map(file => `"${file}"`).join(' ')}`);
+      for (const chunk of chunks) {
+        await ssh.exec(`rm ${chunk.map(file => `"${file}"`).join(' ')}`);
+      }
       console.timeEnd('rmFiles');
     }
     if (dirs_to_delete.length > 0) {
@@ -256,7 +264,7 @@ router.post('/:id/train', async (req, res) => {
             --dataset-dir '${datasetDir}/${datasetId}' \
             --training-dir '${cwd}' \
             --metadata-file '${cwd}/${metadataFile}' \
-            ; sleep 60";`;
+            ; sleep 300";`;
     const response2 = await ssh.exec(command);
     ssh.close();
 

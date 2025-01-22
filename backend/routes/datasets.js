@@ -5,8 +5,7 @@ const DAVClient = require('webdav').createClient;
 
 const datasetDir = 'diffusion-lab/datasets/';
 const trainedModelsDir = 'diffusion-lab/trained-models/';
-const trainingDir = 'train/';
-const validationDir = 'val/';
+const dataDir = 'data/';
 const metadataFile = 'metadata.json';
 
 
@@ -44,12 +43,12 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Get train images of a dataset
-router.get('/:id/images/train', async (req, res) => {
+// Get preview of images of a dataset
+router.get('/:id/images', async (req, res) => {
   const id = req.params.id;
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth)
-    const response = await dav.getDirectoryContents(datasetDir + id + '/' + trainingDir);
+    const response = await dav.getDirectoryContents(datasetDir + id + '/' + dataDir);
 
     const files = response
       .filter(file => file.type == 'file')
@@ -57,17 +56,17 @@ router.get('/:id/images/train', async (req, res) => {
     res.json(files);
 
   } catch (error) {
-    console.error('Error for /datasets/:id/images/train for', id, ':', error.message);
+    console.error('Error for /datasets/:id/images for', id, ':', error.message);
   }
 });
 
 // Get a specific train image of a dataset
-router.get('/:id/images/train/:name', async (req, res) => {
+router.get('/:id/images/:name', async (req, res) => {
   const id = req.params.id;
   const name = req.params.name;
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth)
-    const readStream = dav.createReadStream(datasetDir + id + '/' + trainingDir + name)
+    const readStream = dav.createReadStream(datasetDir + id + '/' + dataDir + name)
     readStream.on('error', (error) => {
       res.status(error.status);
       res.send(error.message);

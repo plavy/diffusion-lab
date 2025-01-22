@@ -11,11 +11,13 @@ class PixelDiffusion(pl.LightningModule):
                  max_steps=2e5,
                  num_timesteps=1000,
                  lr=1e-4,
-                 batch_size=16):
+                 batch_size=16,
+                 sample_shape=(64,64)):
         super().__init__()
         self.max_steps = max_steps
         self.lr = lr
         self.batch_size = batch_size
+        self.sample_shape = sample_shape
         self.save_hyperparameters()
         
         self.model=DenoisingDiffusionProcess(num_timesteps=num_timesteps)

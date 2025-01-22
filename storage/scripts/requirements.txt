@@ -5,8 +5,7 @@ networkx==3.1
 matplotlib
 scikit-image
 pytorch-lightning==1.9.3
-diffusers
+diffusers==0.31.0
 einops
-kornia
 Pillow
 webdavclient3
