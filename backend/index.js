@@ -29,6 +29,10 @@ app.get('/', (req, res) => {
 // Routes
 const datasetsRoute = require('./routes/datasets');
 app.use('/datasets', datasetsRoute);
+const downsizingsRoute = require('./routes/downsizings');
+app.use('/downsizings', downsizingsRoute);
+const augmentationsRoute = require('./routes/augmentations');
+app.use('/augmentations', augmentationsRoute);
 const sshServersRoute = require('./routes/ssh-servers');
 app.use('/servers', sshServersRoute);
 

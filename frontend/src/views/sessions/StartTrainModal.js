@@ -1,22 +1,38 @@
 import { useEffect, useState } from "react";
 import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
-import { CAlert, CButton, CForm, CFormInput, CFormSelect, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from "@coreui/react";
+import { CAlert, CButton, CForm, CFormInput, CFormLabel, CFormSelect, CFormSwitch, CInputGroup, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from "@coreui/react";
 import { cilWarning } from "@coreui/icons";
 import LoadingButton from "../../components/LoadingButton";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
-import { data } from "autoprefixer";
 
-const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset }) => {
+const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizingList, augmentationList, dataset }) => {
   const [formData, setFormData] = useState({
     "dataset": "",
-    "preprocessing": "crop",
+    "downsizing": "",
+    "shape": "",
+    "augmentations": {},
     "model": "pixel-diffusion",
     "hyperparameter:learningRate": "1e-10",
     "hyperparameter:maxSteps": "100",
     "sessionName": "",
     "sshServer": "",
   });
+
+  const shapeList = [
+    {
+      label: "64x64",
+      value: "64x64"
+    },
+    {
+      label: "128x128",
+      value: "128x128"
+    },
+    {
+      label: "256x256",
+      value: "256x256"
+    }
+  ]
 
   useEffect(() => {
     if (modalVisible) {
@@ -28,6 +44,15 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset })
         } else {
           newFormData["sshServer"] = serverList[0].id;
         }
+      }
+      if (downsizingList.length > 0) {
+        newFormData["downsizing"] = downsizingList[0].id;
+      }
+      if (shapeList.length > 0) {
+        newFormData["shape"] = shapeList[0].value;
+      }
+      if (augmentationList.length > 0) {
+        newFormData["augmentations"] = Object.fromEntries(augmentationList.map(augmentation => [augmentation.id, false]));
       }
       newFormData["dataset"] = dataset;
       newFormData["sessionName"] = `model-${getDateTime()}`;
@@ -42,6 +67,16 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset })
     setFormData({
       ...formData,
       [e.target.id]: e.target.value,
+    });
+  };
+
+  const handleAugmentationChange = (e) => {
+    setFormData({
+      ...formData,
+      augmentations: {
+        ...formData.augmentations,
+        [e.target.id]: e.target.checked,
+      }
     });
   };
 
@@ -60,7 +95,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset })
       .then(res => { setModalVisible(false) })
       .catch(error => {
         setErrorMessage(error.response.data);
-        setWaitingRespone(false);  
+        setWaitingRespone(false);
       });
   }
 
@@ -76,16 +111,38 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset })
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
       <CForm id="trainConfig">
-        <CFormSelect
-          id="preprocessing"
-          floatingLabel="Preprocessing"
-          options={[
-            { label: 'Crop', value: 'crop' },
-            { label: 'Two', value: 'two' },
-            { label: 'Three', value: 'three' }
-          ]}
-          onChange={handleChange}
-        />
+        <CInputGroup>
+          <CFormSelect
+            id="downsizing"
+            floatingLabel="Downsizing method"
+            options={downsizingList.map(downsizing => ({
+              label: downsizing.name,
+              value: downsizing.id
+            }))}
+            onChange={handleChange}
+          />
+          <CFormSelect
+            id="shape"
+            floatingLabel="Shape"
+            options={shapeList}
+            onChange={handleChange}
+          />
+        </CInputGroup>
+        <div className="form-floating">
+          <div className="form-control mt-2" style={{ height: 'unset', paddingTop: '2rem' }}>
+            {augmentationList.map((augmentation) => (
+              <CFormSwitch
+                key={augmentation.id}
+                id={augmentation.id}
+                label={augmentation.name}
+                checked={formData["augmentations"][augmentation.id]}
+                onChange={(e) => handleAugmentationChange(e)}
+                color="primary"
+              />
+            ))}
+          </div>
+          <CFormLabel>Augmentation methods</CFormLabel>
+        </div>
         <CFormSelect className="mt-2"
           id="model"
           floatingLabel="Model"
@@ -93,6 +150,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, dataset })
             { label: 'Pixel diffusion', value: 'pixel-diffusion' },
             { label: 'Latent diffusion', value: 'latent-diffusion' },
           ]}
+          value={formData["model"]}
           onChange={handleChange}
         />
         <CFormInput className="mt-2"

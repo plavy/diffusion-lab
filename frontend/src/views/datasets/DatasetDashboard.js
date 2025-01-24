@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getLocal, updateDatasetList, updateServerList } from "../../utils";
+import { getAuthHeader, getBackendURL, getLocal, updateAugmentationList, updateDatasetList, updateDownsizingList, updateServerList } from "../../utils";
 import { useSelector, useDispatch } from 'react-redux';
 
 import {
@@ -42,21 +42,27 @@ const DatasetDashboard = () => {
 
   const [selectedSession, setSelectedSession] = useState(null);
 
-  const [trainedModels, setTrainedModels] = useState([]);
-  const [trainedModelsReady, setTrainedModelsReady] = useState(false);
+  const [sessions, setSessions] = useState([]);
+  const [SessionsReady, setSessionsReady] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState(null);
 
+  const [numberImages, setNumberImages] = useState(null);
   const [imageSrcList, setImageSrcList] = useState([]);
 
-  const autoRefresh = useSelector((state) => state.autoRefresh)
+  const autoRefresh = useSelector((state) => state.autoRefresh);
   const serverList = useSelector((state) => state.serverList);
+  const downsizingList = useSelector((state) => state.downsizingList);
+  const augmentationList = useSelector((state) => state.augmentationList);
 
   useEffect(() => {
     updateDatasetList(dispatch);
     updateServerList(dispatch);
+    updateDownsizingList(dispatch);
+    updateAugmentationList(dispatch);
     setSiteReady(false);
-    setTrainedModelsReady(false);
+    setSessionsReady(false);
     setSelectedSession(null);
+    setNumberImages(null);
   }, [id]);
 
   // Metadata
@@ -94,6 +100,7 @@ const DatasetDashboard = () => {
     })
       .then(res => {
         const images = res.data;
+        setNumberImages(images.length);
         for (let i = 0; i < 10; i++) {
           axios.get(`${getBackendURL()}/datasets/${id}/images/${images[i]}`, {
             headers: {
@@ -115,90 +122,112 @@ const DatasetDashboard = () => {
     return images;
   }
 
-  // Trained models
-  const getTrainedModels = () => {
+  // Traning sessions
+  const getSessions = () => {
     axios.get(`${getBackendURL()}/datasets/${id}/models`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then(res => { setTrainedModels(res.data); setTrainedModelsReady(true); })
-      .catch((e) => { setTrainedModels([]); setTrainedModelsReady(true); })
+      .then(res => { setSessions(res.data); setSessionsReady(true); })
+      .catch((e) => { setSessions([]); setSessionsReady(true); })
   }
 
-  // Get trained models
+  // Get traning sessions
   useEffect(() => {
     if (autoRefresh) {
       const interval = setInterval(() => {
-        getTrainedModels();
+        getSessions();
       }, 4000);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh])
+  }, [autoRefresh, id])
   useEffect(() => {
-    getTrainedModels();
+    getSessions();
   }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, detailsVisible, activeAccordionItem]);
 
   const AccordionItems = () => {
     let accordionItems = [];
-    for (let model of trainedModels) {
-      const hyperparameters = Object.entries(model)
+    for (let session of sessions) {
+      const hyperparameters = Object.entries(session)
         .filter(([key]) => key.startsWith('hyperparameter:'))
         .map(([key, value]) => `${key.replace("hyperparameter:", "")}=${value}`)
         .join(", ");
       accordionItems.push(
-        <CAccordionItem key={model.sessionName} itemKey={model.sessionName}>
-          <CAccordionHeader>{model.sessionName}
+        <CAccordionItem key={session.sessionName} itemKey={session.sessionName}>
+          <CAccordionHeader>{session.sessionName}
             {
-              model.uploadDone ? null : (
-                model.trainingProgress == "100" ? <CBadge className="m-1" color="primary">UPLOADING</CBadge> :
-                  <CBadge className="m-1" color="secondary">{model.trainingProgress}%</CBadge>)
+              session.error ?
+                <CBadge className="m-1" color="danger">ERROR</CBadge> : (
+                  session.uploadDone ? null : (
+                    session.trainingProgress == "100" ? <CBadge className="m-1" color="primary">UPLOADING</CBadge> :
+                      <CBadge className="m-1" color="secondary">{session.trainingProgress}%</CBadge>))
             }
           </CAccordionHeader>
           <CAccordionBody>
-            Preprocessing: {model.preprocessing}
-            <br />
-            Model: {model.model}
-            <br />
-            Hyperparameters: {hyperparameters}
-            <br />
-            SSH server: {model.sshServer}
-            <br />
-            {
-              model.trainingProgress == "100" ?
+            {session.error ?
+              <>
+                {session.error}
                 <div className="d-flex flex-row flex-wrap gap-2">
                   <CButton type="submit" color="primary" onClick={() => {
-                    setSelectedSession(model);
-                    setGenerateVisible(true);
-                  }}>Generate image</CButton>
-                  <CButton type="submit" color="primary" onClick={() => {
-                    setSelectedSession(model);
-                    setDetailsVisible(true);
-                  }}>Details</CButton>
+                    setSelectedSession(session);
+                    setDeleteTrainVisible(true);
+                  }}>Delete
+                  </CButton>
+                </div>
+              </>
+              : (
+                <>
+                  Model: {session.model}
+                  <br />
+                  Hyperparameters: {hyperparameters}
+                  <br />
+                  SSH server: {session.sshServer}
+                  <br />
+
                   {
-                    model.uploadDone ? <CButton type="submit" color="primary" onClick={() => {
-                      setSelectedSession(model);
-                      setDeleteTrainVisible(true);
-                    }}>Delete</CButton>
-                      : null
+                    session.trainingProgress == "100" ?
+                      <div className="d-flex flex-row flex-wrap gap-2">
+                        <CButton type="submit" color="primary" onClick={() => {
+                          setSelectedSession(session);
+                          setGenerateVisible(true);
+                        }}>Generate image
+                        </CButton>
+                        <CButton type="submit" color="primary" onClick={() => {
+                          setSelectedSession(session);
+                          setDetailsVisible(true);
+                        }}>Details
+                        </CButton>
+                        {
+                          session.uploadDone ? <CButton type="submit" color="primary" onClick={() => {
+                            setSelectedSession(session);
+                            setDeleteTrainVisible(true);
+                          }}>Delete
+                          </CButton>
+                            : null
+                        }
+                      </div>
+                      :
+                      <div className="d-flex flex-row flex-wrap gap-2">
+                        <CButton type="submit" color="primary" onClick={() => {
+                          setSelectedSession(session);
+                          setLogsVisible(true);
+                        }}>Logs
+                        </CButton>
+                        <CButton type="submit" color="primary" onClick={() => {
+                          setSelectedSession(session);
+                          setDetailsVisible(true);
+                        }}>Details
+                        </CButton>
+                        <CButton type="submit" color="primary" onClick={() => {
+                          setSelectedSession(session);
+                          setStopTrainVisible(true);
+                        }}>Stop training
+                        </CButton>
+                      </div>
                   }
-                </div>
-                :
-                <div className="d-flex flex-row flex-wrap gap-2">
-                  <CButton type="submit" color="primary" onClick={() => {
-                    setSelectedSession(model);
-                    setLogsVisible(true);
-                  }}>Logs</CButton>
-                  <CButton type="submit" color="primary" onClick={() => {
-                    setSelectedSession(model);
-                    setDetailsVisible(true);
-                  }}>Details</CButton>
-                  <CButton type="submit" color="primary" onClick={() => {
-                    setSelectedSession(model);
-                    setStopTrainVisible(true);
-                  }}>Stop training</CButton>
-                </div>
-            }
+                </>
+              )}
           </CAccordionBody>
         </CAccordionItem>)
     }
@@ -220,7 +249,7 @@ const DatasetDashboard = () => {
         <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 3, minWidth: "450px" }}>
 
           <h2>Dataset {metadata.name}</h2>
-          <div>Author: {metadata.author}</div>
+          <div>Number of images: {numberImages}</div>
 
           <CContainer className="flex-grow-1 mt-2 overflow-y-scroll">
             <CRow xs={{ cols: 2 }}>
@@ -228,19 +257,19 @@ const DatasetDashboard = () => {
             </CRow>
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
-{/* 
+          {/* 
           <div className="mt-2 d-flex flex-row gap-2">
             <CButton type="submit" color="primary" action="#">Add new image</CButton>
             <CButton type="submit" color="primary" action="#">Take a photo</CButton>
           </div> */}
         </div>
 
-        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2, minWidth: "300px" }}>
-          <h2>Trained models</h2>
+        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2, minWidth: "350px" }}>
+          <h2>Traning sessions</h2>
 
           <div className="flex-grow-1 overflow-auto">
             <CAccordion>
-              {trainedModelsReady ? <AccordionItems /> : <div className="pt-3 text-center">
+              {SessionsReady ? <AccordionItems /> : <div className="pt-3 text-center">
                 <CSpinner color="primary" variant="grow" />
               </div>}
             </CAccordion>
@@ -257,13 +286,13 @@ const DatasetDashboard = () => {
         </div>
       </div>
 
-      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} dataset={id} />
+      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} dataset={id} />
       <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
       <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
       <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} session={selectedSession} dataset={id} />
       <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} session={selectedSession} />
 
-      <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={trainedModels} session={selectedSession} dataset={id} />
+      <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={sessions} session={selectedSession} dataset={id} />
 
     </>
   )

@@ -6,6 +6,8 @@ const initialState = {
   autoRefresh: false,
   serverList: [],
   datasetList: [],
+  downsizingList: [],
+  augmentationList: [],
 }
 
 const changeState = (state = initialState, { type, ...rest }) => {

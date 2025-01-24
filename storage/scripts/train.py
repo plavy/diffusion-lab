@@ -1,6 +1,7 @@
 import os
 import argparse
 import json
+import importlib
 
 from webdav3.client import Client
 from PIL import Image
@@ -13,7 +14,6 @@ from DiffusionFastForward.src import PixelDiffusion
 from DiffusionFastForward.src import EMA
 from DiffusionFastForward.src import ProgressUpdater
 
-CROP_SIZE = 64
 
 class ImageDataset(Dataset):
     def __init__(self,
@@ -66,6 +66,12 @@ def set_metadata(metadata_file, key, value):
     with open(metadata_file, 'w') as f:
         json.dump(metadata, f, indent=2)
 
+def load_downsizing(id):
+    return importlib.import_module(f'downsizings.{id}.main')
+
+def load_augmentation(id):
+    return importlib.import_module(f'augmentations.{id}.main')
+
 def train(args):
 
     print(f'Args: {args}')
@@ -83,58 +89,69 @@ def train(args):
 
     set_metadata(args.metadata_file, "trainingProgress", 0)
     set_metadata(args.metadata_file, "uploadDone", False)
+    set_metadata(args.metadata_file, "error", "")
     dav.upload_sync(local_path=args.training_dir, remote_path=args.training_dir)
 
-    # Set up hyperparameters
-    max_steps = int(metadata["hyperparameter:maxSteps"])
-    learning_rate=1e-4
-    batch_size=16
-    num_timesteps=1000
-    paired_dataset=False
+    try:
 
-    transform = transforms.Compose([
-        transforms.Resize((CROP_SIZE, CROP_SIZE)),
-        transforms.ToTensor(),
-        transforms.Normalize((0.5,), (0.5,))
-    ])
+        # Set up hyperparameters
+        max_steps = int(metadata["hyperparameter:maxSteps"])
+        learning_rate=1e-4
+        batch_size=16
+        num_timesteps=1000
 
-    data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=0.3)
+        crop_x = int(metadata.get('shape').split('x')[0])
+        crop_y = int(metadata.get('shape').split('x')[1])
+        augmentations = [key for key, value in metadata.get('augmentations').items() if value]
 
-    model=PixelDiffusion(
-                         max_steps=max_steps,
-                         lr=learning_rate,
-                         batch_size=batch_size,
-                         num_timesteps=num_timesteps,
-                         sample_shape=(CROP_SIZE,CROP_SIZE))
+        transform = transforms.Compose([
+            load_downsizing(metadata.get('downsizing')).downsize(crop_x, crop_y),
+            transforms.ToTensor(),
+            transforms.Normalize((0.5,), (0.5,))
+        ] + [load_augmentation(id).augment() for id in augmentations])
 
-    trainer = pl.Trainer(
-        default_root_dir=os.path.join(args.training_dir),
-        max_steps=model.max_steps,
-        callbacks=[EMA(0.9999), ProgressUpdater(args)],
-        accelerator='gpu',
-        devices=[0]
-    )
+        data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=0.3)
 
-    print(f'''Starting training with hyperparameters:
-    max_steps={max_steps}
-    learning_rate={learning_rate}
-    batch_size={batch_size}
-    num_timesteps={num_timesteps}
-    paired_dataset={paired_dataset}''')
+        model=PixelDiffusion(
+                            max_steps=max_steps,
+                            lr=learning_rate,
+                            batch_size=batch_size,
+                            num_timesteps=num_timesteps,
+                            sample_shape=(crop_x,crop_y))
 
-    trainer.fit(model=model, datamodule=data_module)
-    trainer.save_checkpoint(os.path.join(args.training_dir, 'model.ckpt'))
-    print('Traning done. Model saved.')
+        trainer = pl.Trainer(
+            default_root_dir=os.path.join(args.training_dir),
+            max_steps=model.max_steps,
+            callbacks=[EMA(0.9999), ProgressUpdater(args)],
+            accelerator='gpu',
+            devices=[0]
+        )
 
-    print('Uploading to WebDAV server')
-    for filename in os.listdir(args.training_dir):
-        file_path = os.path.join(args.training_dir, filename)
-        dav.upload_sync(local_path=file_path, remote_path=file_path)
-    
-    # Mark training as done
-    set_metadata(args.metadata_file, "uploadDone", True)
-    dav.upload_sync(local_path=args.metadata_file, remote_path=args.metadata_file)
-    print('Done.')
+        print(f'''Starting training with hyperparameters:
+        max_steps={max_steps}
+        learning_rate={learning_rate}
+        batch_size={batch_size}
+        num_timesteps={num_timesteps}
+        ''')
+
+        trainer.fit(model=model, datamodule=data_module)
+        trainer.save_checkpoint(os.path.join(args.training_dir, 'model.ckpt'))
+        print('Traning done. Model saved locally.')
+
+        print('Uploading model to WebDAV server')
+        for filename in os.listdir(args.training_dir):
+            file_path = os.path.join(args.training_dir, filename)
+            dav.upload_sync(local_path=file_path, remote_path=file_path)
+        
+        # Mark training as done
+        set_metadata(args.metadata_file, "uploadDone", True)
+        dav.upload_sync(local_path=args.metadata_file, remote_path=args.metadata_file)
+        print('Done.')
+    except Exception as e:
+        set_metadata(args.metadata_file, "error", str(e))
+        print('Uploading error metadata')
+        dav.upload_sync(local_path=args.training_dir, remote_path=args.training_dir)
+        print('Done.')
 
 
 if __name__ == "__main__":
@@ -143,8 +160,11 @@ if __name__ == "__main__":
     parser.add_argument("--dav-username", required=True, help="Username for WebDAV server")
     parser.add_argument("--dav-password", required=True, help="Password for WebDAV server")
     parser.add_argument("--dataset-dir", required=True, help="Path to dataset directory")
-    parser.add_argument("--training-dir", required=True, help="Path to working directory")
-    parser.add_argument("--metadata-file", required=True, help="Relative path to hyperparameters file")
+    # parser.add_argument("--downsizing", required=True, help="ID of downsizing method")
+    # parser.add_argument("--augmentations", required=True, help="List of IDs of augmentation methods")
+    # parser.add_argument("--model", required=True, help="ID of model to use")
+    parser.add_argument("--training-dir", required=True, help="Path to traning session directory")
+    parser.add_argument("--metadata-file", required=True, help="Path to training definition file")
     
     args = parser.parse_args()
     train(args)
