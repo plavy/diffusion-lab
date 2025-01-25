@@ -1,4 +1,4 @@
 from torchvision import transforms
 
-def augment():
+def construct():
   return transforms.RandomHorizontalFlip(p=0.5)

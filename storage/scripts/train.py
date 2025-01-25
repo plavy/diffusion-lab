@@ -2,6 +2,7 @@ import os
 import argparse
 import json
 import importlib
+import traceback
 
 from webdav3.client import Client
 from PIL import Image
@@ -10,9 +11,7 @@ from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader, random_split
 import pytorch_lightning as pl
 
-from DiffusionFastForward.src import PixelDiffusion
-from DiffusionFastForward.src import EMA
-from DiffusionFastForward.src import ProgressUpdater
+from ProgressUpdater import ProgressUpdater
 
 
 class ImageDataset(Dataset):
@@ -66,11 +65,14 @@ def set_metadata(metadata_file, key, value):
     with open(metadata_file, 'w') as f:
         json.dump(metadata, f, indent=2)
 
-def load_downsizing(id):
+def load_downsizing(id: str):
     return importlib.import_module(f'downsizings.{id}.main')
 
-def load_augmentation(id):
+def load_augmentation(id: str):
     return importlib.import_module(f'augmentations.{id}.main')
+
+def load_model(id: str):
+    return importlib.import_module(f'models.{id}.main')
 
 def train(args):
 
@@ -93,50 +95,39 @@ def train(args):
     dav.upload_sync(local_path=args.training_dir, remote_path=args.training_dir)
 
     try:
-
-        # Set up hyperparameters
-        max_steps = int(metadata["hyperparameter:maxSteps"])
-        learning_rate=1e-4
-        batch_size=16
-        num_timesteps=1000
-
         crop_x = int(metadata.get('shape').split('x')[0])
         crop_y = int(metadata.get('shape').split('x')[1])
         augmentations = [key for key, value in metadata.get('augmentations').items() if value]
 
         transform = transforms.Compose([
-            load_downsizing(metadata.get('downsizing')).downsize(crop_x, crop_y),
+            load_downsizing(metadata.get('downsizing')).construct(crop_x, crop_y),
             transforms.ToTensor(),
             transforms.Normalize((0.5,), (0.5,))
-        ] + [load_augmentation(id).augment() for id in augmentations])
+        ] + [load_augmentation(id).construct() for id in augmentations])
 
         data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=0.3)
 
-        model=PixelDiffusion(
-                            max_steps=max_steps,
-                            lr=learning_rate,
-                            batch_size=batch_size,
-                            num_timesteps=num_timesteps,
-                            sample_shape=(crop_x,crop_y))
+        hyperparameters = metadata.get('hyperparameters')
+        model = load_model(metadata.get('model')).construct(hyperparameters, (crop_x, crop_y))
+        callbacks = load_model(metadata.get('model')).callbacks()
+        # model=PixelDiffusion(
+        #                     max_steps=max_steps,
+        #                     lr=learning_rate,
+        #                     batch_size=batch_size,
+        #                     num_timesteps=num_timesteps,
+        #                     sample_shape=(crop_x,crop_y))
 
         trainer = pl.Trainer(
             default_root_dir=os.path.join(args.training_dir),
             max_steps=model.max_steps,
-            callbacks=[EMA(0.9999), ProgressUpdater(args)],
+            callbacks=callbacks+[ProgressUpdater(args)],
             accelerator='gpu',
             devices=[0]
         )
 
-        print(f'''Starting training with hyperparameters:
-        max_steps={max_steps}
-        learning_rate={learning_rate}
-        batch_size={batch_size}
-        num_timesteps={num_timesteps}
-        ''')
-
         trainer.fit(model=model, datamodule=data_module)
         trainer.save_checkpoint(os.path.join(args.training_dir, 'model.ckpt'))
-        print('Traning done. Model saved locally.')
+        print('Traning ended. Model saved locally.')
 
         print('Uploading model to WebDAV server')
         for filename in os.listdir(args.training_dir):
@@ -148,6 +139,7 @@ def train(args):
         dav.upload_sync(local_path=args.metadata_file, remote_path=args.metadata_file)
         print('Done.')
     except Exception as e:
+        traceback.print_exc()
         set_metadata(args.metadata_file, "error", str(e))
         print('Uploading error metadata')
         dav.upload_sync(local_path=args.training_dir, remote_path=args.training_dir)
@@ -160,9 +152,6 @@ if __name__ == "__main__":
     parser.add_argument("--dav-username", required=True, help="Username for WebDAV server")
     parser.add_argument("--dav-password", required=True, help="Password for WebDAV server")
     parser.add_argument("--dataset-dir", required=True, help="Path to dataset directory")
-    # parser.add_argument("--downsizing", required=True, help="ID of downsizing method")
-    # parser.add_argument("--augmentations", required=True, help="List of IDs of augmentation methods")
-    # parser.add_argument("--model", required=True, help="ID of model to use")
     parser.add_argument("--training-dir", required=True, help="Path to traning session directory")
     parser.add_argument("--metadata-file", required=True, help="Path to training definition file")
     

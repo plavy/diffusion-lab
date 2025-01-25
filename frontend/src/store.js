@@ -8,6 +8,7 @@ const initialState = {
   datasetList: [],
   downsizingList: [],
   augmentationList: [],
+  modelList: [],
 }
 
 const changeState = (state = initialState, { type, ...rest }) => {

@@ -115,3 +115,16 @@ export function updateAugmentationList(dispatch) {
   })
     .then((res) => { dispatch({ type: 'set', augmentationList: res.data }); storeLocal('augmentations', res.data) });
 }
+
+export function updateModelList(dispatch) {
+  const models = getLocal('models');
+  if (models) {
+    dispatch({ type: 'set', modelList: models });
+  }
+  axios.get(`${getBackendURL()}/models`, {
+    headers: {
+      Authorization: getAuthHeader() // Encrypted by TLS
+    }
+  })
+    .then((res) => { dispatch({ type: 'set', modelList: res.data }); storeLocal('models', res.data) });
+}

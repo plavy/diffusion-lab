@@ -1,4 +1,4 @@
 from torchvision import transforms
 
-def downsize(x, y):
+def construct(x, y):
   return transforms.CenterCrop((x, y))

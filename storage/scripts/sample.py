@@ -1,11 +1,11 @@
 import os
 import argparse
+import importlib
 
 import torch
 import torchvision
 
-from DiffusionFastForward.src import PixelDiffusion
-from DiffusionFastForward.src import EMA
+from utils import get_metadata, load_model
 
 def sample(args):
     if not os.path.exists(os.path.join('model.ckpt')):
@@ -22,7 +22,8 @@ def sample(args):
         with open(progress_file, 'w') as f:
             f.write(str(round((n - i) / n * 100)))
 
-    model = PixelDiffusion.load_from_checkpoint(checkpoint_path=os.path.join('model.ckpt'))
+    model_class = load_model(get_metadata('metadata.json').get('model')).get_class()
+    model = model_class.load_from_checkpoint(checkpoint_path=os.path.join('model.ckpt'))
     model.cuda()
     out=model(batch_size=batch_size, shape=model.hparams.sample_shape, verbose=False, progress_callback=on_progress_change)
 

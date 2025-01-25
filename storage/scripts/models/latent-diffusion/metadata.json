@@ -1,0 +1,11 @@
+{
+  "id": "latent-diffusion",
+  "name": "Latent diffusion",
+  "hyperparameters": [
+    {
+      "id": "max-steps",
+      "name": "Max steps",
+      "default": "100"
+    }
+  ]
+}

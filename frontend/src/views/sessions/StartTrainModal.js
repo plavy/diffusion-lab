@@ -6,15 +6,14 @@ import LoadingButton from "../../components/LoadingButton";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
 
-const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizingList, augmentationList, dataset }) => {
+const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizingList, augmentationList, modelList, dataset }) => {
   const [formData, setFormData] = useState({
     "dataset": "",
     "downsizing": "",
     "shape": "",
     "augmentations": {},
-    "model": "pixel-diffusion",
-    "hyperparameter:learningRate": "1e-10",
-    "hyperparameter:maxSteps": "100",
+    "model": "",
+    "hyperparameters": {},
     "sessionName": "",
     "sshServer": "",
   });
@@ -54,6 +53,10 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
       if (augmentationList.length > 0) {
         newFormData["augmentations"] = Object.fromEntries(augmentationList.map(augmentation => [augmentation.id, false]));
       }
+      if (modelList.length > 0) {
+        newFormData["model"] = modelList[0].id
+        newFormData["hyperparameters"] = Object.fromEntries(modelList[0].hyperparameters.map(hp => [hp.id, hp.default]))
+      }
       newFormData["dataset"] = dataset;
       newFormData["sessionName"] = `model-${getDateTime()}`;
       setFormData(newFormData);
@@ -70,6 +73,14 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     });
   };
 
+  const handleModelChange = (e) => {
+    setFormData({
+      ...formData,
+      model: e.target.value,
+      hyperparameters: Object.fromEntries(modelList.find(model => model.id == e.target.value).hyperparameters.map(hp => [hp.id, hp.default])),
+    });
+  };
+
   const handleAugmentationChange = (e) => {
     setFormData({
       ...formData,
@@ -79,6 +90,16 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
       }
     });
   };
+
+  const handleHyperparameterChange = (e) => {
+    setFormData({
+      ...formData,
+      hyperparameters: {
+        ...formData.hyperparameters,
+        [e.target.id]: e.target.value,
+      }
+    });
+  }
 
   const [watingResponse, setWaitingRespone] = useState(false);
   const [errorMesage, setErrorMessage] = useState("");
@@ -130,7 +151,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
         </CInputGroup>
         <div className="form-floating">
           <div className="form-control mt-2" style={{ height: 'unset', paddingTop: '2rem' }}>
-            {augmentationList.map((augmentation) => (
+            {augmentationList.map(augmentation => (
               <CFormSwitch
                 key={augmentation.id}
                 id={augmentation.id}
@@ -146,27 +167,26 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
         <CFormSelect className="mt-2"
           id="model"
           floatingLabel="Model"
-          options={[
-            { label: 'Pixel diffusion', value: 'pixel-diffusion' },
-            { label: 'Latent diffusion', value: 'latent-diffusion' },
-          ]}
+          options={modelList.map(model => ({
+            label: model.name,
+            value: model.id
+          }))}
           value={formData["model"]}
-          onChange={handleChange}
+          onChange={handleModelChange}
         />
-        <CFormInput className="mt-2"
-          id="hyperparameter:learningRate"
-          type="text"
-          floatingLabel="Learning rate"
-          value={formData["hyperparameter:learningRate"]}
-          onChange={handleChange}
-        />
-        <CFormInput className="mt-2"
-          id="hyperparameter:maxSteps"
-          type="text"
-          floatingLabel="Max steps"
-          value={formData["hyperparameter:maxSteps"]}
-          onChange={handleChange}
-        />
+        {modelList.filter(model => model.id == formData["model"]).map(model => (
+          model["hyperparameters"].map(hp =>
+          (
+            <CFormInput className="mt-2"
+              key={hp.id}
+              id={hp.id}
+              type="text"
+              floatingLabel={hp.name}
+              value={formData["hyperparameters"][hp.id]}
+              onChange={handleHyperparameterChange}
+            />
+          ))
+        ))}
         <CFormInput className="mt-2"
           id="sessionName"
           type="text"

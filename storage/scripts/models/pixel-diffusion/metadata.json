@@ -1,3 +1,16 @@
 {
-  
+  "id": "pixel-diffusion",
+  "name": "Pixel diffusion",
+  "hyperparameters": [
+    {
+      "id": "max-steps",
+      "name": "Max steps",
+      "default": "100"
+    },
+    {
+      "id": "learning-rate",
+      "name": "Learning rate",
+      "default": "1e-4"
+    }
+  ]
 }

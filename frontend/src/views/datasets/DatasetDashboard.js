@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getLocal, updateAugmentationList, updateDatasetList, updateDownsizingList, updateServerList } from "../../utils";
+import { getAuthHeader, getBackendURL, getLocal, updateAugmentationList, updateDatasetList, updateDownsizingList, updateModelList, updateServerList } from "../../utils";
 import { useSelector, useDispatch } from 'react-redux';
 
 import {
@@ -53,12 +53,14 @@ const DatasetDashboard = () => {
   const serverList = useSelector((state) => state.serverList);
   const downsizingList = useSelector((state) => state.downsizingList);
   const augmentationList = useSelector((state) => state.augmentationList);
+  const modelList = useSelector((state) => state.modelList);
 
   useEffect(() => {
     updateDatasetList(dispatch);
     updateServerList(dispatch);
     updateDownsizingList(dispatch);
     updateAugmentationList(dispatch);
+    updateModelList(dispatch);
     setSiteReady(false);
     setSessionsReady(false);
     setSelectedSession(null);
@@ -257,15 +259,10 @@ const DatasetDashboard = () => {
             </CRow>
             <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
           </CContainer>
-          {/* 
-          <div className="mt-2 d-flex flex-row gap-2">
-            <CButton type="submit" color="primary" action="#">Add new image</CButton>
-            <CButton type="submit" color="primary" action="#">Take a photo</CButton>
-          </div> */}
         </div>
 
         <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2, minWidth: "350px" }}>
-          <h2>Traning sessions</h2>
+          <h2>Training sessions</h2>
 
           <div className="flex-grow-1 overflow-auto">
             <CAccordion>
@@ -286,7 +283,7 @@ const DatasetDashboard = () => {
         </div>
       </div>
 
-      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} dataset={id} />
+      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} dataset={id} />
       <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
       <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
       <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} session={selectedSession} dataset={id} />

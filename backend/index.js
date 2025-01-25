@@ -33,6 +33,8 @@ const downsizingsRoute = require('./routes/downsizings');
 app.use('/downsizings', downsizingsRoute);
 const augmentationsRoute = require('./routes/augmentations');
 app.use('/augmentations', augmentationsRoute);
+const modelsRoute = require('./routes/models');
+app.use('/models', modelsRoute);
 const sshServersRoute = require('./routes/ssh-servers');
 app.use('/servers', sshServersRoute);
 
