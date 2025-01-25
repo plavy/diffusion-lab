@@ -24,6 +24,7 @@ import DeleteTrainModal from "../sessions/DeleteTrainModal";
 import LogsModal from "../sessions/LogsModal";
 import GenerateModal from "../sessions/GenerateModal";
 import DetailsModal from "../sessions/DetailsModal";
+import ProgressPlaceholder from "../../components/ProgressPlaceholder";
 
 
 const DatasetDashboard = () => {
@@ -118,8 +119,12 @@ const DatasetDashboard = () => {
 
   const ImagesTrain = () => {
     let images = []
-    for (let imageSrc of imageSrcList) {
-      images.push(<CCol className="p-1 position-relative" key={imageSrc}><CImage fluid src={imageSrc} /></CCol>)
+    for (let i = 0; i < 10; i++) {
+      if (imageSrcList[i]) {
+        images.push(<CCol className="p-1" key={imageSrcList[i]}><CImage fluid src={imageSrcList[i]} /></CCol>)
+      } else {
+        images.push(<CCol className="p-1"><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)"/></CCol>)
+      }
     }
     return images;
   }
@@ -151,10 +156,6 @@ const DatasetDashboard = () => {
   const AccordionItems = () => {
     let accordionItems = [];
     for (let session of sessions) {
-      const hyperparameters = Object.entries(session)
-        .filter(([key]) => key.startsWith('hyperparameter:'))
-        .map(([key, value]) => `${key.replace("hyperparameter:", "")}=${value}`)
-        .join(", ");
       accordionItems.push(
         <CAccordionItem key={session.sessionName} itemKey={session.sessionName}>
           <CAccordionHeader>{session.sessionName}
@@ -180,13 +181,14 @@ const DatasetDashboard = () => {
               </>
               : (
                 <>
-                  Model: {session.model}
+                  Model: {modelList.find(model => model.id == session.model)?.name}
                   <br />
-                  Hyperparameters: {hyperparameters}
+                  Hyperparameters: {
+                    JSON.stringify(session.hyperparameters).replaceAll('"', '')
+                  }
                   <br />
-                  SSH server: {session.sshServer}
+                  SSH server: {serverList.find(server => server.id == session.sshServer)?.name}
                   <br />
-
                   {
                     session.trainingProgress == "100" ?
                       <div className="d-flex flex-row flex-wrap gap-2">

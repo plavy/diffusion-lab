@@ -10,7 +10,7 @@
 import torch
 from torch import nn
 
-from .beta_schedules import *
+from .beta_schedules import get_beta_schedule
 
 class ForwardModel(nn.Module):
     """

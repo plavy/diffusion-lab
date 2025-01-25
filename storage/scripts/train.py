@@ -110,12 +110,6 @@ def train(args):
         hyperparameters = metadata.get('hyperparameters')
         model = load_model(metadata.get('model')).construct(hyperparameters, (crop_x, crop_y))
         callbacks = load_model(metadata.get('model')).callbacks()
-        # model=PixelDiffusion(
-        #                     max_steps=max_steps,
-        #                     lr=learning_rate,
-        #                     batch_size=batch_size,
-        #                     num_timesteps=num_timesteps,
-        #                     sample_shape=(crop_x,crop_y))
 
         trainer = pl.Trainer(
             default_root_dir=os.path.join(args.training_dir),

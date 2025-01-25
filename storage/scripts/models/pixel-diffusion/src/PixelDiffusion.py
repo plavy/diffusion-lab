@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .DenoisingDiffusionProcess import *
+from .DenoisingDiffusionProcess.DenoisingDiffusionProcess import DenoisingDiffusionProcess
 
 class PixelDiffusion(pl.LightningModule):
     def __init__(self,

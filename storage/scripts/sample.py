@@ -24,6 +24,7 @@ def sample(args):
 
     model_class = load_model(get_metadata('metadata.json').get('model')).get_class()
     model = model_class.load_from_checkpoint(checkpoint_path=os.path.join('model.ckpt'))
+    
     model.cuda()
     out=model(batch_size=batch_size, shape=model.hparams.sample_shape, verbose=False, progress_callback=on_progress_change)
 

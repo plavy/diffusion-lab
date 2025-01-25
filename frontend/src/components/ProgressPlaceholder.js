@@ -1,16 +1,15 @@
 import React, { useEffect, useState } from 'react';
 
-const ProgressPlaceholder = ({progress}) => {
+const ProgressPlaceholder = ({progress, color_left='var(--cui-primary)', color_right='orange'}) => {
   const position = 100 - progress;
   const styles = `
     .progress-placeholder {
       width: 100%;
       aspect-ratio: 1/1;
       background-color: var(--cui-body-bg);
-      background: linear-gradient(90deg, var(--cui-primary) 0%, var(--cui-primary) 50%, orange 100%);
+      background: linear-gradient(90deg, ${color_left} 0%, ${color_left} 50%, ${color_right} 100%);
       background-size: 200% 100%;
       animation: gradient-animation 2s ease infinite;
-      position: relative;
     }
 
     @keyframes gradient-animation {

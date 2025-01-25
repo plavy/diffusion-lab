@@ -13,6 +13,8 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
   const [metrics, setMetrics] = useState(null);
   const [clearView, setClearView] = useState(true);
 
+  // Start, end, duration of training
+
   const getLogs = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
