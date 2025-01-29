@@ -11,7 +11,7 @@ const DeleteTrainModal = ({ modalVisible, setModalVisible, session, dataset }) =
   const stopTraining = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
-    axios.delete(`${getBackendURL()}/datasets/${dataset}/models/${session.sessionName}`, {
+    axios.delete(`${getBackendURL()}/datasets/${dataset}/sessions/${session.sessionName}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }

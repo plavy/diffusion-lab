@@ -12,7 +12,7 @@ const serverDir = 'diffusion-lab/ssh-servers/';
 const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/';
 const datasetDir = 'diffusion-lab/datasets/';
-const trainedModelsDir = 'diffusion-lab/trained-models/';
+const sessionDir = 'diffusion-lab/sessions/';
 const samplesDir = '/tmp/samples';
 
 // List SSH servers
@@ -30,9 +30,8 @@ router.get('/', async (req, res) => {
     res.json(servers);
 
   } catch (error) {
-    res.status(500);
-    res.send(error.message);
-    console.error('Error for GET /servers', ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for GET /servers', ':', error.message || error);
   }
 
 });
@@ -50,9 +49,8 @@ router.post('/', async (req, res) => {
     await dav.putFileContents(serverDir + id + "/" + metadataFile, JSON.stringify(metadata, null, 2));
     res.json({ 'id': id });
   } catch (error) {
-    res.status(500);
-    res.send(error.message);
-    console.error('Error for POST /servers', ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for POST /servers', ':', error.message || error);
   }
 });
 
@@ -64,9 +62,8 @@ router.get('/:id', async (req, res) => {
     const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
     res.json(metadata);
   } catch (error) {
-    res.status(500);
-    res.send(error.message);
-    console.error('Error for GET /servers/:id for', id, ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for GET /servers/:id for', id, ':', error.message || error);
   }
 });
 
@@ -79,9 +76,8 @@ router.put('/:id', async (req, res) => {
     await dav.putFileContents(serverDir + id + "/" + metadataFile, newMetadata);
     res.json({ 'code': 0 });
   } catch (error) {
-    res.status(500);
-    res.send(error.message);
-    console.error('Error for PUT /servers/:id for', id, ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for PUT /servers/:id for', id, ':', error.message || error);
   }
 });
 
@@ -93,9 +89,8 @@ router.delete('/:id', async (req, res) => {
     await dav.deleteFile(serverDir + id);
     res.json({ 'code': 0 });
   } catch (error) {
-    res.status(500);
-    res.send(error.message);
-    console.error('Error for DELETE /servers/:id for', id, ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for DELETE /servers/:id for', id, ':', error.message || error);
   }
 });
 
@@ -120,8 +115,7 @@ router.get('/:id/status', async (req, res) => {
     }
 
   } catch (error) {
-    res.status(500);
-    res.send(error.message);
+    res.status(500).json({ code: 1, message: "Interal server error" });
     console.error('Error for /servers/:id/status for', id, ':', error.message);
   }
 });
@@ -195,17 +189,14 @@ router.post('/:id/sync', async (req, res) => {
     const files = scripts_list.filter(file => file.type == 'file').map(file => file.filename.replace(/^\/+/, ''));
     // Remove old scripts, if exist, except venv
     await ssh.exec(`if [[ -d ${scriptsDir} ]]; then find ${scriptsDir} -mindepth 1 -maxdepth 1 ! -name 'venv' -exec rm -r {} +; fi`);
-    // Create scripts dirs
-    for (const dir of dirs) {
-      await ssh.exec(`mkdir -p ${dir}`);
-    }
+    await ssh.exec(`mkdir -p ${dirs.map(dir => `"${dir}"`).join(' ')}`);
     // Create scripts files
     console.time('syncScripts');
-    const tasks = files.map(async file => concurrencyLimit(async () => {
+    const create_scripts_files = files.map(async file => concurrencyLimit(async () => {
       const file_content = await dav.getFileContents(file);
       await scp.writeFile(file, file_content);
     }));
-    await Promise.all(tasks);
+    await Promise.all(create_scripts_files);
     console.timeEnd('syncScripts');
 
     scp.close();
@@ -216,7 +207,7 @@ router.post('/:id/sync', async (req, res) => {
     res.json({ code: 0 });
     ssh.close();
   } catch (error) {
-    res.status(500).json({ code: 1 });
+    res.status(500).send(error.message || error);
     console.error('Error for /servers/:id/sync for', id, ':', error.message || error);
   }
 });
@@ -225,7 +216,6 @@ router.post('/:id/sync', async (req, res) => {
 router.delete('/:id/cache', async (req, res) => {
   const id = req.params.id;
   try {
-
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
@@ -234,8 +224,8 @@ router.delete('/:id/cache', async (req, res) => {
     res.json({ code: 0 });
     ssh.close();
   } catch (error) {
-    res.status(500).json({ code: 1 });
-    console.error('Error for /servers/:id/cache for', id, ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/cache for', id, ':', error.message || error);
   }
 });
 
@@ -245,7 +235,7 @@ router.post('/:id/train', async (req, res) => {
   try {
     const datasetId = ensureVariable("Dataset", req.body.dataset);
     const sessionName = ensureVariable("Session name", req.body.sessionName);
-    const cwd = `${trainedModelsDir}/${datasetId}/${sessionName}`
+    const cwd = `${sessionDir}/${datasetId}/${sessionName}`
 
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
@@ -257,21 +247,29 @@ router.post('/:id/train', async (req, res) => {
     await scp.writeFile(`${cwd}/${metadataFile}`, JSON.stringify(req.body, null, 2));
     scp.close();
 
-    const command = `tmux new-session -d -s ${sessionName} "source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/train.py \
-            --dav-url '${req.auth.baseUrl}' \
-            --dav-username '${req.auth.username}' \
-            --dav-password '${req.auth.password}' \
-            --dataset-dir '${datasetDir}/${datasetId}' \
-            --training-dir '${cwd}' \
-            --metadata-file '${cwd}/${metadataFile}' \
-            ; sleep 300";`;
+    const command = `
+    echo "source ~/${scriptsDir}/venv/bin/activate && \
+    python3 ~/${scriptsDir}/train.py \
+    --dav-url '${req.auth.baseUrl}' \
+    --dav-username '${req.auth.username}' \
+    --dav-password '${req.auth.password}' \
+    --dataset-dir '${datasetDir}/${datasetId}' \
+    --training-dir '${cwd}' \
+    --metadata-file '${cwd}/${metadataFile}' \
+    " >> tmp.sh;
+    
+    tmux new-session -d -s ${sessionName} " \
+    bash tmp.sh;
+    sleep 300";`;
+    // qsub -N diffusion-lab -l select=1:ngpus=1 tmp.sh;
+    console.log(command)
     const response2 = await ssh.exec(command);
     ssh.close();
 
     res.json(response2);
   } catch (error) {
-    res.status(400).send(error.message);
-    console.error('Error for /servers/:id/train for', id, ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/train for', id, ':', error.message || error);
   }
 });
 
@@ -287,9 +285,8 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
     ssh.close();
     res.json(response2);
   } catch (error) {
-    res.status(500);
-    res.json(error);
-    console.error('Error for /servers/:id/train/:sessionName for', id, ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/train/:sessionName for', id, ':', error.message || error);
   }
 });
 
@@ -318,7 +315,7 @@ router.get('/:id/train/:sessionName/metrics', async (req, res) => {
   const sessionName = req.params.sessionName;
   try {
     const datasetId = ensureVariable("Dataset", req.query.dataset);
-    const cwd = `${trainedModelsDir}/${datasetId}/${sessionName}`
+    const cwd = `${sessionDir}/${datasetId}/${sessionName}`
 
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
@@ -341,13 +338,13 @@ router.post('/:id/generate/:name', async (req, res) => {
   const baseName = req.params.name;
   try {
     const datasetId = ensureVariable("Dataset", req.body.datasetId);
-    const trainedModel = ensureVariable("Trained model", req.body.trainedModel);
+    const session = ensureVariable("Session", req.body.session);
 
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
 
-    const cwd = `${trainedModelsDir}/${datasetId}/${trainedModel}`
+    const cwd = `${sessionDir}/${datasetId}/${session}`
     const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
         --save-dir ${samplesDir} \
         --base-name ${baseName} \
@@ -359,7 +356,7 @@ router.post('/:id/generate/:name', async (req, res) => {
 
     res.json({ code: 0 });
   } catch (error) {
-    res.status(400).send(error.message || error);
+    res.status(500).send(error.message || error);
     console.error('Error for /servers/:id/generate/:name for', id, ':', error.message || error);
   }
 });
@@ -402,9 +399,8 @@ router.get('/:id/generate/:name/progress', async (req, res) => {
     if (error.code == 2) {
       res.send("0");
     } else {
-      res.status(500);
-      res.json(error);
-      console.error('Error for /servers/:id/generate/:name/progress for', id, ':', error.message);
+      res.status(500).send(error.message || error);
+      console.error('Error for /servers/:id/generate/:name/progress for', id, ':', error.message || error);
     }
   }
 });

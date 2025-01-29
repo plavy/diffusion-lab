@@ -12,8 +12,8 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
   const [errorMesage, setErrorMessage] = useState("");
 
   const [formData, setFormData] = useState({
-    "trainedModel": "",
-    "numberImages": "4",
+    "session": "",
+    "numberImages": "",
     "sshServer": "",
   });
   const [formVisible, setFormVisible] = useState(false);
@@ -22,28 +22,26 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
     if (modalVisible) {
       const newFormData = { ...formData };
       if (session) {
-        newFormData["trainedModel"] = session.sessionName;
-        newFormData["sshServer"] = session.sshServer;
+        newFormData.session = session.sessionName;
+        newFormData.sshServer = session.sshServer;
       } else {
         if (sessions.length > 0) {
-          newFormData["trainedModel"] = sessions[0].sessionName;
+          newFormData.session = sessions[0].sessionName;
         }
         if (serverList.length > 0) {
-          newFormData["sshServer"] = serverList[0].id;
+          newFormData.sshServer = serverList[0].id;
         }
       }
       setFormData(newFormData);
-      // setProgress(0);
-      // setProgressRequestParam(null);
       setImageSrcList([]);
       setFormVisible(true);
     } else {
       setWaitingRespone(false);
       setErrorMessage("");
       setFormData({
-        "trainedModel": "",
-        "numberImages": "4",
-        "sshServer": "",
+        session: "",
+        numberImages: "4",
+        sshServer: "",
       });
       clearInterval(progressInterval.current);
       clearInterval(progressUpdateInterval.current);
@@ -64,7 +62,6 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
       [e.target.id]: e.target.value,
     });
   };
-
 
   const handleSubmit = async (e) => {
     const timestamp = Date.now();
@@ -168,14 +165,14 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
       {formVisible && <CForm>
 
         <CFormSelect
-          id="trainedModel"
-          floatingLabel="Trained model"
+          id="session"
+          floatingLabel="Session"
           options={sessions
             .map(session => ({
               label: session.sessionName,
               value: session.sessionName
             }))}
-          value={formData["trainedModel"]}
+          value={formData["session"]}
           onChange={handleChange}
         />
         <CFormInput className="mt-2"

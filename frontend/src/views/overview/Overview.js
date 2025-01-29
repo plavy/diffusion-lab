@@ -1,7 +1,7 @@
-import { CAlert, CButton, CCol, CListGroup, CListGroupItem, CRow, CSpinner } from "@coreui/react"
+import { CAlert, CBadge, CButton, CCol, CListGroup, CListGroupItem, CRow, CSpinner } from "@coreui/react"
 import NewServerModal from "../servers/NewServerModal"
 import { useEffect, useState } from "react";
-import { getAuthHeader, getBackendURL, getAuth, updateServerList, updateDatasetList } from "../../utils";
+import { getAuthHeader, getBackendURL, getAuth, updateServerList, updateDatasetList, findName } from "../../utils";
 import { cilCheck, cilWarning } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
@@ -15,13 +15,13 @@ const Overview = () => {
   const [davStatus, setDavStatus] = useState(null);
   const updateDavStatus = () => {
     setDavStatus(null);
-    axios.get(`${getBackendURL()}/datasets`, {
+    axios.get(`${getBackendURL()}/models`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then((res) => setDavStatus(0))
-      .catch((res) => setDavStatus(1));
+      .then((_) => setDavStatus(0))
+      .catch((_) => setDavStatus(1));
   }
 
   const domain = getAuth().url;
@@ -49,14 +49,14 @@ const Overview = () => {
 
   const [serverStatus, setServerStatus] = useState({});
   useEffect(() => {
-      for (const server of serverList) {        
-        axios.get(`${getBackendURL()}/servers/${server.id}/status`, {
-          headers: {
-            Authorization: getAuthHeader() // Encrypted by TLS
-          }
-        }).then((res) => {
-          setServerStatus(prev => ({...prev, [server.id]: res.data}))});
-      }
+    for (const server of serverList) {
+      axios.get(`${getBackendURL()}/servers/${server.id}/status`, {
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        }
+      }).then((res) => setServerStatus(prev => ({ ...prev, [server.id]: res.data })))
+        .catch((error) => setServerStatus(prev => ({ ...prev, [server.id]: error.response.data })));
+    }
   }, [serverList]);
 
   const ServerStatus = ({ serverId }) => {
@@ -67,6 +67,23 @@ const Overview = () => {
       </>
     )
   }
+
+  const [sessions, setSessions] = useState({});
+  const getTrainings = async () => {
+    for (const dataset of datasetList) {
+      axios.get(`${getBackendURL()}/datasets/${dataset.id}/sessions`, {
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        }
+      }).then((res) => res.data.map(session => setSessions({
+        ...sessions,
+        [`${dataset.id}-${session.sessionName}`]: session,
+      })));
+    }
+  }
+  useEffect(() => {
+    getTrainings();
+  }, [datasetList])
 
   return (
     <>
@@ -101,14 +118,23 @@ const Overview = () => {
           </div>
           <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "300px" }}>
             <h2>Trainings in progress</h2>
-            <CListGroup className="flex-grow-1 overflow-auto">
-              <CListGroupItem>
-                <div className="d-flex w-100 justify-content-between">
-                  <h5 className="mb-1">model-2</h5>
-                </div>
-                <small>Maps</small>
-              </CListGroupItem>
-            </CListGroup>
+            <div className="flex-grow-1 overflow-auto">
+              {Object.values(sessions).length > 0 ?
+                (
+                  <CListGroup>
+                    {Object.values(sessions).
+                      filter(session => !session.error && !session.uploadDone && session.trainingProgress != "100")
+                      .map(session => (
+                        <CListGroupItem key={session.sessionName} as="a" href={`/datasets/${session.dataset}`}>
+                          <h6 className="mb-1">{session.sessionName}
+                            <CBadge className="m-1" color="secondary">{session.trainingProgress}%</CBadge></h6>
+                          <small>{findName(datasetList, session.dataset)}</small>
+                        </CListGroupItem>
+                      ))}
+                  </CListGroup>
+                ) :
+                (<div className="pt-3 text-center"><CSpinner color="primary" variant="grow" /></div>)}
+            </div>
           </div>
         </div>
 

@@ -44,7 +44,7 @@ const DatasetDashboard = () => {
   const [selectedSession, setSelectedSession] = useState(null);
 
   const [sessions, setSessions] = useState([]);
-  const [SessionsReady, setSessionsReady] = useState(false);
+  const [sessionsReady, setSessionsReady] = useState(false);
   const [activeAccordionItem, setActiveAccordionItem] = useState(null);
 
   const [numberImages, setNumberImages] = useState(null);
@@ -131,7 +131,7 @@ const DatasetDashboard = () => {
 
   // Traning sessions
   const getSessions = () => {
-    axios.get(`${getBackendURL()}/datasets/${id}/models`, {
+    axios.get(`${getBackendURL()}/datasets/${id}/sessions`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -256,7 +256,7 @@ const DatasetDashboard = () => {
 
           <div className="flex-grow-1 overflow-auto">
             <CAccordion>
-              {SessionsReady ? <AccordionItems /> : <div className="pt-3 text-center">
+              {sessionsReady ? <AccordionItems /> : <div className="pt-3 text-center">
                 <CSpinner color="primary" variant="grow" />
               </div>}
             </CAccordion>

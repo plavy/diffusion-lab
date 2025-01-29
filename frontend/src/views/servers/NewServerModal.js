@@ -12,6 +12,7 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
     "hostname": "",
     "port": "",
     "username": "",
+    "icon": "<svg width=\"160\" height=\"160\" viewBox=\"0 0 160 160\"</svg>",
   });
   
   const handleChange = (e) => {
@@ -78,6 +79,13 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
             type="text"
             id="username"
             floatingLabel="Username"
+            placeholder=""
+            onChange={handleChange}
+          />
+          <CFormInput className="mb-3"
+            type="text"
+            id="icon"
+            floatingLabel="Icon"
             placeholder=""
             onChange={handleChange}
           />

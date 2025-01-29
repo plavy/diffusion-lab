@@ -33,6 +33,8 @@ const ServerDashboard = () => {
       const filtered = getLocal('servers').filter(server => server.id == id);
       if (filtered.length == 1) {
         setMetadata(filtered[0]);
+        setUpdateLoading(false);
+        setSyncingLoading(false);
         setSiteReady(true);
         getMetadata();
       } else {
@@ -51,24 +53,24 @@ const ServerDashboard = () => {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then((res) => setStatus(res.data));
+    }).then((res) => setStatus(res.data))
+      .catch((error) => setStatus(error.response.data))
   }, [id]);
 
 
-  const StatusChecking = () => (
-    <CAlert id="statusChecking" color="info">
-      <CSpinner size="sm" /> Checking server status...
-    </CAlert>
-  )
-  const StatusSuccess = () => (
-    <CAlert id="statusSuccess" color="success">
-      <CIcon icon={cilCheck} /> {status.message}
-    </CAlert>
-  )
-  const StatusFail = () => (
-    <CAlert id="statusFail" color="danger">
-      <CIcon icon={cilWarning} /> {status.message}
-    </CAlert>
+  const Status = () => (
+    status ?
+      (status.code == 0 ?
+        <CAlert id="statusSuccess" color="success">
+          <CIcon icon={cilCheck} /> {status.message}
+        </CAlert> :
+        <CAlert id="statusFail" color="danger">
+          <CIcon icon={cilWarning} /> {status.message}
+        </CAlert>
+      ) :
+      <CAlert id="statusChecking" color="info">
+        <CSpinner size="sm" /> Checking server status...
+      </CAlert>
   )
 
   const handleChange = (e) => {
@@ -78,28 +80,37 @@ const ServerDashboard = () => {
     });
   };
 
+  const [updateLoading, setUpdateLoading] = useState(false);
   const handleSubmit = (e) => {
     e.preventDefault();
+    setUpdateLoading(true);
     axios.put(`${getBackendURL()}/servers/${id}`, metadata, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then(res => { window.location.reload(); });
+      .then(_ => { window.location.reload(); setUpdateLoading(false)});
   };
 
-  const [syncingVisible, setSyncingVisible] = useState(false);
-  const [syncingSuccessVisible, setSyncingSuccessVisible] = useState(false);
+  const [syncingLoading, setSyncingLoading] = useState(false);
   const syncScripts = async () => {
-    setSyncingSuccessVisible(false);
-    setSyncingVisible(true);
+    setSyncingLoading(true);
     await axios.post(`${getBackendURL()}/servers/${id}/sync`, null, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     }).then((res) => {
-      setSyncingVisible(false);
-      setSyncingSuccessVisible(true);
+      setSyncingLoading(false);
+      setStatus({
+        code: 0,
+        message: "Server synced"
+      })
+    }).catch((_) => {
+      setSyncingLoading(false);
+      setStatus({
+        code: 1,
+        message: "Sync failed"
+      })
     });
   };
 
@@ -112,7 +123,7 @@ const ServerDashboard = () => {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
-    }).then((res) => {
+    }).then((_) => {
       setClearingCacheVisible(false);
       setClearingCacheSuccessVisible(true);
     });
@@ -137,13 +148,13 @@ const ServerDashboard = () => {
   }
 
   return (
-    <div className="flex-grow-1 d-flex flex-row gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
+    <div className="flex-grow-1 d-flex flex-row flex-wrap gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
 
-      <div className="d-flex flex-column" style={{ flex: 3 }}>
+      <div className="d-flex flex-column" style={{ flex: 3, minWidth: '300px' }}>
 
         <h1>{metadata.name}</h1>
 
-        {status ? (status.code == 0 ? <StatusSuccess /> : <StatusFail />) : <StatusChecking />}
+        <Status />
 
         <CForm onSubmit={handleSubmit}>
           <CFormInput className="mb-3"
@@ -174,22 +185,27 @@ const ServerDashboard = () => {
             value={metadata.username}
             onChange={handleChange}
           />
-          <CButton color="primary" type="submit">
+          <CFormInput className="mb-3"
+            type="text"
+            id="icon"
+            floatingLabel="Icon"
+            value={metadata.icon}
+            onChange={handleChange}
+          />
+          <LoadingButton color="primary" type="submit" loadingVisible={updateLoading}>
             Update configuration
-          </CButton>
+          </LoadingButton>
         </CForm>
 
       </div>
-      <div className="d-flex flex-column" style={{ flex: 2 }}>
+      <div className="d-flex flex-column" style={{ flex: 2, minWidth: '300px' }}>
 
         <h2>Maintenance control</h2>
         <CContainer className="bg-body rounded-4 p-3">
-          <div>Syncing will update Diffusion Lab training scripts and models on the SSH server, and also update Python environment. Dataset files are not affected by syncing.</div>
-          <CButton className="mt-2" type="submit" color="primary" disabled={syncingVisible} onClick={() => syncScripts()}>
-            <CSpinner size="sm" className="me-1" hidden={!syncingVisible} />
-            <CIcon icon={cilCheck} className="me-1" hidden={!syncingSuccessVisible} />
+          <div>Syncing will update Diffusion Lab datasets, training scripts and models on the SSH server. Python environment will also be updated.</div>
+          <LoadingButton className="mt-2" type="submit" color="primary" loadingVisible={syncingLoading} onClick={() => syncScripts()}>
             Sync environment
-          </CButton>
+          </LoadingButton>
         </CContainer>
         <CContainer className="bg-body rounded-4 p-3 mt-3">
           <div>Clearing cache will remove datasets, trained models, and generated images from the SSH server. Storage server is not be affected.</div>

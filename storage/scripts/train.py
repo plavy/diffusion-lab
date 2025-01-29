@@ -32,16 +32,18 @@ class ImageDataset(Dataset):
         return image
 
 class ImageDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir, batch_size, transform, val_proportion):
+    def __init__(self, data_dir, batch_size, transform, val_proportion, random_seed=None):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.transform = transform
         self.val_proportion = val_proportion
+        self.random_seed = random_seed
 
     def setup(self, stage=None):
         dataset = ImageDataset(self.data_dir, transform=self.transform)
-        torch.manual_seed(42)
+        if self.random_seed:
+            torch.manual_seed(self.random_seed)
         
         # Compute the sizes for train and validation splits
         val_size = int(len(dataset) * self.val_proportion)
@@ -81,7 +83,7 @@ def train(args):
 
     # Read training metadata (including hyperparameters)
     metadata = get_metadata(args.metadata_file)
-    print(f'Metdata: {metadata}')
+    print(f'Metadata: {metadata}')
 
     # Set up WebDAV connection
     dav = Client({
@@ -103,10 +105,10 @@ def train(args):
         transform = transforms.Compose([
             load_downsizing(metadata.get('downsizing')).construct(crop_x, crop_y),
             transforms.ToTensor(),
-            # transforms.Normalize((0.5,), (0.5,))
         ] + [load_augmentation(id).construct() for id in augmentations])
 
-        data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=0.4)
+        val_proportion = float(metadata.get('validationSplitProportion'))
+        data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=val_proportion)
 
         hyperparameters = metadata.get('hyperparameters')
         model = load_model(metadata.get('model')).construct(hyperparameters, (crop_x, crop_y))
@@ -122,7 +124,7 @@ def train(args):
 
         trainer.fit(model=model, datamodule=data_module)
         # trainer.save_checkpoint(os.path.join(args.training_dir, 'model.ckpt'))
-        print('Traning ended. Model saved locally.')
+        print('Training ended. Model saved locally.')
 
         print('Uploading model to WebDAV server')
         for filename in os.listdir(args.training_dir):

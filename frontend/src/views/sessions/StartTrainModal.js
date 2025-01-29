@@ -17,6 +17,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     "downsizing": "",
     "shape": "",
     "augmentations": {},
+    "validationSplitProportion": "",
     "model": "",
     "hyperparameters": {},
     "sessionName": "",
@@ -38,6 +39,21 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     }
   ]
 
+  const valProportionList = [
+    {
+      id: "0.2",
+      name: "0.2"
+    },
+    {
+      id: "0.3",
+      name: "0.3"
+    },
+    {
+      id: "0.4",
+      name: "0.4"
+    }
+  ]
+
   useEffect(() => {
     if (modalVisible) {
       let newFormData;
@@ -46,24 +62,27 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
       } else {
         newFormData = { ...formData };
         if (serverList.length > 0) {
-          newFormData["sshServer"] = serverList[0].id;
+          newFormData.sshServer = serverList[0].id;
         }
         if (downsizingList.length > 0) {
-          newFormData["downsizing"] = downsizingList[0].id;
+          newFormData.downsizing = downsizingList[0].id;
         }
         if (shapeList.length > 0) {
-          newFormData["shape"] = shapeList[0].id;
+          newFormData.shape = shapeList[0].id;
         }
         if (augmentationList.length > 0) {
-          newFormData["augmentations"] = Object.fromEntries(augmentationList.map(augmentation => [augmentation.id, false]));
+          newFormData.augmentations = Object.fromEntries(augmentationList.map(augmentation => [augmentation.id, false]));
+        }
+        if (valProportionList.length > 0) {
+          newFormData.validationSplitProportion = valProportionList[0].id;
         }
         if (modelList.length > 0) {
-          newFormData["model"] = modelList[0].id
-          newFormData["hyperparameters"] = Object.fromEntries(modelList[0].hyperparameters.map(hp => [hp.id, hp.default]))
+          newFormData.model = modelList[0].id
+          newFormData.hyperparameters = Object.fromEntries(modelList[0].hyperparameters.map(hp => [hp.id, hp.default]))
         }
       }
-      newFormData["dataset"] = dataset;
-      newFormData["sessionName"] = `model-${getDateTime()}`;
+      newFormData.dataset = dataset;
+      newFormData.sessionName = `model-${getDateTime()}`;
       setFormData(newFormData);
     } else {
       setWaitingRespone(false);
@@ -145,7 +164,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then(res => { setModalVisible(false) })
+      .then(_ => { setModalVisible(false) })
       .catch(error => {
         setErrorMessage(error.response.data);
         setWaitingRespone(false);
@@ -239,21 +258,34 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
         </div>
       )
     },
-    // random split, validation proportion
     {
       content: (
-        <div>
-          <CFormLabel className="w-100 text-center">Augmentation methods</CFormLabel>
-          {augmentationList.map(augmentation => (
-            <CFormSwitch
-              key={augmentation.id}
-              id={augmentation.id}
-              label={augmentation.name}
-              checked={formData["augmentations"][augmentation.id]}
-              onChange={handleAugmentationChange}
-              color="primary"
-            />
-          ))}
+        <div className="d-flex flex-column gap-3 align-items-center justify-content-center" >
+          <div>
+            <CFormLabel className="w-100 text-center">Augmentation methods</CFormLabel>
+            {augmentationList.map(augmentation => (
+              <CFormSwitch
+                key={augmentation.id}
+                id={augmentation.id}
+                label={augmentation.name}
+                checked={formData["augmentations"][augmentation.id]}
+                onChange={handleAugmentationChange}
+                color="primary"
+              />
+            ))}
+          </div>
+          <div>
+            <CFormLabel className="w-100 text-center">Validation split proportion</CFormLabel>
+            <div className="d-flex flex-row flex-wrap gap-2 justify-content-center">
+              {valProportionList.map(
+                vp => <TranparentButton
+                  key={vp.id}
+                  label={vp.name}
+                  onClick={() => handleRadioChange('validationSplitProportion', vp.id)}
+                  selected={vp.id == formData.validationSplitProportion} />
+              )}
+            </div>
+          </div>
         </div>
       )
     },
@@ -298,10 +330,12 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
           <div className="border rounded p-2 w-100">
             Downsizing: {findName(downsizingList, formData.downsizing)} {findName(shapeList, formData.shape)}
             <br />
-            Augmentations: {Object.keys(formData.augmentations).length == 0 ? (<>None</>) :
+            Augmentations: {Object.entries(formData.augmentations).filter(([key, value]) => value == true).length == 0 ? (<>None</>) :
               Object.entries(formData.augmentations).filter(([key, value]) => value == true).map(([key, value]) => (<span key={key}><br /> - {findName(augmentationList, key)}</span>))
             }
             <br />
+            Validation split proportion: {findName(valProportionList, formData.validationSplitProportion)}
+            <br/>
             Model: {findName(modelList, formData.model)}
             <br />
             Hyperparameters: {Object.keys(formData.hyperparameters).length == 0 ? (<>None</>) :

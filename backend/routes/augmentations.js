@@ -21,9 +21,8 @@ router.get('/', async (req, res) => {
     res.json(augmentations);
 
   } catch (error) {
-    console.error('Error for /augmentations:', error.message);
-    res.status(500);
-    res.send(error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for /augmentations:', error.message || error);
   }
 });
 

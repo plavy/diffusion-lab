@@ -21,9 +21,8 @@ router.get('/', async (req, res) => {
     res.json(downsizings);
 
   } catch (error) {
-    console.error('Error for /downsizings:', error.message);
-    res.status(500);
-    res.send(error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for /downsizings:', error.message || error);
   }
 });
 

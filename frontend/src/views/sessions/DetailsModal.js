@@ -18,7 +18,7 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
   const getLogs = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
-    const metricsUrl = session.uploadDone ? `${getBackendURL()}/datasets/${dataset}/models/${session.sessionName}/metrics`
+    const metricsUrl = session.uploadDone ? `${getBackendURL()}/datasets/${dataset}/sessions/${session.sessionName}/metrics`
       : `${getBackendURL()}/servers/${session.sshServer}/train/${session.sessionName}/metrics?dataset=${dataset}`
     axios.get(metricsUrl, {
       headers: {
