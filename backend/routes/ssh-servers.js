@@ -353,6 +353,7 @@ router.post('/:id/generate/:name', async (req, res) => {
         --base-name ${baseName} \
         --number '${req.body.numberImages}' \
         `;
+    console.log(command)
     await ssh.exec(command);
     ssh.close();
 
@@ -379,9 +380,8 @@ router.get('/:id/generate/:name/image/:number', async (req, res) => {
     res.send(file);
     scp.close();
   } catch (error) {
-    res.status(500);
-    res.json(error);
-    console.error('Error for /servers/:id/generate/:name/image/:number for', id, ':', error.message);
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/generate/:name/image/:number for', id, ':', error.message || error);
   }
 });
 

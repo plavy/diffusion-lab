@@ -14,6 +14,10 @@ export function getDateTime() {
   return `${year}-${month}-${day}-${hours}-${minutes}-${seconds}`;
 }
 
+export function findName(list, id) {
+  return list.find(el => el.id == id)?.name
+}
+
 export function getBackendURL() {
   return import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 }
@@ -59,6 +63,7 @@ export function getLocal(key) {
 export function logout() {
   localStorage.removeItem('datasets');
   localStorage.removeItem('servers');
+  localStorage.removeItem('last-training');
   storeAuth({
     url: getAuth().url
   });

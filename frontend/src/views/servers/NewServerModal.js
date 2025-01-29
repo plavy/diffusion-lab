@@ -49,7 +49,7 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
       aria-labelledby="NewServerModal"
     >
       <CModalHeader>
-        <CModalTitle id="NewServerModal">Add new server</CModalTitle>
+        <CModalTitle id="NewServerModal">New server</CModalTitle>
       </CModalHeader>
       <CModalBody>
         <CForm id="form" onSubmit={handleSubmit}>

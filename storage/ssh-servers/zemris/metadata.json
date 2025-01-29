@@ -3,5 +3,6 @@
 	"name": "ZEMRIS",
 	"hostname": "161.53.65.191",
 	"port": 22,
-	"username": "tplavec"
+	"username": "tplavec",
+  "icon": "<svg width=\"160\" height=\"160\" viewBox=\"0 0 160 160\" xmlns=\"http:\/\/www.w3.org\/2000\/svg\"><defs><pattern id=\"dotPattern\" x=\"0\" y=\"0\" width=\"4\" height=\"4\" patternUnits=\"userSpaceOnUse\"><circle cx=\"2\" cy=\"2\" r=\"1\" fill=\"gray\"\/><\/pattern><\/defs><text x=\"21\" y=\"104\" font-size=\"60\" font-family=\"Arial\" fill=\"url(#dotPattern)\" font-weight=\"bold\">FER<\/text><\/svg>"
 }

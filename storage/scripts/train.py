@@ -41,6 +41,7 @@ class ImageDataModule(pl.LightningDataModule):
 
     def setup(self, stage=None):
         dataset = ImageDataset(self.data_dir, transform=self.transform)
+        torch.manual_seed(42)
         
         # Compute the sizes for train and validation splits
         val_size = int(len(dataset) * self.val_proportion)
@@ -102,10 +103,10 @@ def train(args):
         transform = transforms.Compose([
             load_downsizing(metadata.get('downsizing')).construct(crop_x, crop_y),
             transforms.ToTensor(),
-            transforms.Normalize((0.5,), (0.5,))
+            # transforms.Normalize((0.5,), (0.5,))
         ] + [load_augmentation(id).construct() for id in augmentations])
 
-        data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=0.3)
+        data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=0.4)
 
         hyperparameters = metadata.get('hyperparameters')
         model = load_model(metadata.get('model')).construct(hyperparameters, (crop_x, crop_y))
@@ -120,7 +121,7 @@ def train(args):
         )
 
         trainer.fit(model=model, datamodule=data_module)
-        trainer.save_checkpoint(os.path.join(args.training_dir, 'model.ckpt'))
+        # trainer.save_checkpoint(os.path.join(args.training_dir, 'model.ckpt'))
         print('Traning ended. Model saved locally.')
 
         print('Uploading model to WebDAV server')

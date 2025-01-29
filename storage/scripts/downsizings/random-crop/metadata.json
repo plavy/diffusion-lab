@@ -1,4 +1,5 @@
 {
   "id": "random-crop",
-  "name": "Random crop"
+  "name": "Random crop",
+  "icon": "<svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" width=\"160\" height=\"160\" viewBox=\"0 0 160 160\"><rect x=\"0\" y=\"0\" width=\"160\" height=\"160\" fill=\"none\" stroke=\"gray\" stroke-width=\"2\" \/><rect x=\"65\" y=\"55\" width=\"80\" height=\"80\" fill=\"none\" stroke=\"red\" stroke-width=\"2\" stroke-dasharray=\"4\" \/><\/svg>"
 }

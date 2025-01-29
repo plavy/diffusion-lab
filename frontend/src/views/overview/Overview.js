@@ -48,11 +48,7 @@ const Overview = () => {
   }, []);
 
   const [serverStatus, setServerStatus] = useState({});
-  // const [lastCall, setLastCall] = useState(0);
   useEffect(() => {
-    // const now = new Date().getTime();
-    // if (now - lastCall >= 10000) {
-      // setLastCall(now);
       for (const server of serverList) {        
         axios.get(`${getBackendURL()}/servers/${server.id}/status`, {
           headers: {
@@ -61,7 +57,6 @@ const Overview = () => {
         }).then((res) => {
           setServerStatus(prev => ({...prev, [server.id]: res.data}))});
       }
-    // }
   }, [serverList]);
 
   const ServerStatus = ({ serverId }) => {

@@ -121,7 +121,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
               });
             })
             .catch(error => {
-              setErrorMessage(error.response.data);
+              setErrorMessage(String(error.response.data));
               setWaitingRespone(false);
               setFormVisible(true);
               setImageSrcList([]);

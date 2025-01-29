@@ -7,5 +7,6 @@
       "name": "Max steps",
       "default": "100"
     }
-  ]
+  ],
+  "icon": "<svg width=\"160\" height=\"160\" xmlns=\"http:\/\/www.w3.org\/2000\/svg\"><path d=\"M 20 40 Q 80 20, 140 40 Q 80 60, 20 40\" fill=\"none\" stroke=\"black\" stroke-width=\"2\" \/><path d=\"M 20 80 Q 80 60, 140 80 Q 80 100, 20 80\" fill=\"none\" stroke=\"dimgray\" stroke-width=\"2\" \/><path d=\"M 20 120 Q 80 100, 140 120 Q 80 140, 20 120\" fill=\"none\" stroke=\"gray\" stroke-width=\"2\" \/><line x1=\"40\" y1=\"40\" x2=\"40\" y2=\"120\" stroke=\"lightgray\" stroke-width=\"2\" \/><line x1=\"120\" y1=\"40\" x2=\"120\" y2=\"120\" stroke=\"darkgray\" stroke-width=\"2\" \/><path d=\"M 80 20 L 80 140\" stroke=\"black\" stroke-width=\"2\" stroke-dasharray=\"4,4\" \/>\r\n<\/svg>"
 }

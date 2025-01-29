@@ -12,5 +12,6 @@
       "name": "Learning rate",
       "default": "1e-4"
     }
-  ]
+  ],
+  "icon": "<svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" width=\"160\" height=\"160\" viewBox=\"0 0 160 160\"><rect x=\"75\" y=\"75\" width=\"10\" height=\"10\" fill=\"gray\" \/><rect x=\"60\" y=\"75\" width=\"10\" height=\"10\" fill=\"darkgray\" \/><rect x=\"60\" y=\"60\" width=\"10\" height=\"10\" fill=\"gray\" \/><rect x=\"90\" y=\"75\" width=\"10\" height=\"10\" fill=\"darkgray\" \/><rect x=\"75\" y=\"60\" width=\"10\" height=\"10\" fill=\"darkgray\" \/><rect x=\"60\" y=\"90\" width=\"10\" height=\"10\" fill=\"darkgray\" \/><rect x=\"90\" y=\"60\" width=\"10\" height=\"10\" fill=\"gray\" \/><rect x=\"75\" y=\"90\" width=\"10\" height=\"10\" fill=\"lightgray\" \/><rect x=\"90\" y=\"90\" width=\"10\" height=\"10\" fill=\"darkgray\" \/><rect x=\"45\" y=\"75\" width=\"10\" height=\"10\" fill=\"lightgray\" \/><rect x=\"105\" y=\"75\" width=\"10\" height=\"10\" fill=\"lightgray\" \/><rect x=\"75\" y=\"45\" width=\"10\" height=\"10\" fill=\"lightgray\" \/><rect x=\"75\" y=\"105\" width=\"10\" height=\"10\" fill=\"gray\" \/><\/svg>"
 }

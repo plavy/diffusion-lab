@@ -1,15 +1,15 @@
 import os
 import argparse
-import importlib
 
-import torch
-import torchvision
+from torchvision import transforms
 
 from utils import get_metadata, load_model
 
 def sample(args):
-    if not os.path.exists(os.path.join('model.ckpt')):
-        print('ERROR Model not found.')
+    checkpoint_dir = os.path.join('lightning_logs', 'version_0', 'checkpoints')
+    trained_model_path = os.path.join(checkpoint_dir, os.listdir(checkpoint_dir)[0])
+    if not os.path.exists(trained_model_path):
+        print('ERROR Trained model not found.')
         exit(1)
         return
 
@@ -23,12 +23,12 @@ def sample(args):
             f.write(str(round((n - i) / n * 100)))
 
     model_class = load_model(get_metadata('metadata.json').get('model')).get_class()
-    model = model_class.load_from_checkpoint(checkpoint_path=os.path.join('model.ckpt'))
+    model = model_class.load_from_checkpoint(checkpoint_path=trained_model_path)
     
     model.cuda()
     out=model(batch_size=batch_size, shape=model.hparams.sample_shape, verbose=False, progress_callback=on_progress_change)
 
-    transform = torchvision.transforms.ToPILImage()
+    transform = transforms.ToPILImage()
 
     for i in range(batch_size):
         pil_img = transform(out[i].detach().cpu())

@@ -121,9 +121,9 @@ const DatasetDashboard = () => {
     let images = []
     for (let i = 0; i < 10; i++) {
       if (imageSrcList[i]) {
-        images.push(<CCol className="p-1" key={imageSrcList[i]}><CImage fluid src={imageSrcList[i]} /></CCol>)
+        images.push(<CCol className="p-1" key={i}><CImage fluid src={imageSrcList[i]} /></CCol>)
       } else {
-        images.push(<CCol className="p-1"><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)"/></CCol>)
+        images.push(<CCol className="p-1" key={i}><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
       }
     }
     return images;
@@ -151,7 +151,7 @@ const DatasetDashboard = () => {
   }, [autoRefresh, id])
   useEffect(() => {
     getSessions();
-  }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, detailsVisible, activeAccordionItem]);
+  }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, detailsVisible, generateVisible, activeAccordionItem]);
 
   const AccordionItems = () => {
     let accordionItems = [];
@@ -168,70 +168,58 @@ const DatasetDashboard = () => {
             }
           </CAccordionHeader>
           <CAccordionBody>
-            {session.error ?
+            {session.error ? session.error : (
               <>
-                {session.error}
-                <div className="d-flex flex-row flex-wrap gap-2">
+                Model: {modelList.find(model => model.id == session.model)?.name}
+                <br />
+                Hyperparameters: {
+                  JSON.stringify(session.hyperparameters).replaceAll('"', '')
+                }
+                <br />
+                SSH server: {serverList.find(server => server.id == session.sshServer)?.name}
+              </>
+            )}
+            <div className="d-flex flex-row flex-wrap gap-2">
+
+              {
+                !session.error && session.trainingProgress != "0" ?
                   <CButton type="submit" color="primary" onClick={() => {
                     setSelectedSession(session);
-                    setDeleteTrainVisible(true);
-                  }}>Delete
-                  </CButton>
-                </div>
-              </>
-              : (
-                <>
-                  Model: {modelList.find(model => model.id == session.model)?.name}
-                  <br />
-                  Hyperparameters: {
-                    JSON.stringify(session.hyperparameters).replaceAll('"', '')
-                  }
-                  <br />
-                  SSH server: {serverList.find(server => server.id == session.sshServer)?.name}
-                  <br />
-                  {
-                    session.trainingProgress == "100" ?
-                      <div className="d-flex flex-row flex-wrap gap-2">
-                        <CButton type="submit" color="primary" onClick={() => {
-                          setSelectedSession(session);
-                          setGenerateVisible(true);
-                        }}>Generate image
-                        </CButton>
-                        <CButton type="submit" color="primary" onClick={() => {
-                          setSelectedSession(session);
-                          setDetailsVisible(true);
-                        }}>Details
-                        </CButton>
-                        {
-                          session.uploadDone ? <CButton type="submit" color="primary" onClick={() => {
-                            setSelectedSession(session);
-                            setDeleteTrainVisible(true);
-                          }}>Delete
-                          </CButton>
-                            : null
-                        }
-                      </div>
-                      :
-                      <div className="d-flex flex-row flex-wrap gap-2">
-                        <CButton type="submit" color="primary" onClick={() => {
-                          setSelectedSession(session);
-                          setLogsVisible(true);
-                        }}>Logs
-                        </CButton>
-                        <CButton type="submit" color="primary" onClick={() => {
-                          setSelectedSession(session);
-                          setDetailsVisible(true);
-                        }}>Details
-                        </CButton>
-                        <CButton type="submit" color="primary" onClick={() => {
-                          setSelectedSession(session);
-                          setStopTrainVisible(true);
-                        }}>Stop training
-                        </CButton>
-                      </div>
-                  }
-                </>
-              )}
+                    setGenerateVisible(true);
+                  }}>Generate image
+                  </CButton> : null
+              }
+              {!session.error ?
+                <CButton type="submit" color="primary" onClick={() => {
+                  setSelectedSession(session);
+                  setDetailsVisible(true);
+                }}>Details
+                </CButton> : null
+              }
+              {
+                !session.error && session.trainingProgress != "100" && session.uploadDone != true ?
+                  <CButton type="submit" color="primary" onClick={() => {
+                    setSelectedSession(session);
+                    setLogsVisible(true);
+                  }}>Logs
+                  </CButton> : null
+              }
+              {
+                !session.error && session.trainingProgress != "100" && session.uploadDone != true ?
+                  <CButton type="submit" color="primary" onClick={() => {
+                    setSelectedSession(session);
+                    setStopTrainVisible(true);
+                  }}>Stop training
+                  </CButton> : null
+              }
+              {session.error || session.uploadDone ?
+                <CButton type="submit" color="primary" onClick={() => {
+                  setSelectedSession(session);
+                  setDeleteTrainVisible(true);
+                }}>Delete
+                </CButton> : null
+              }
+            </div>
           </CAccordionBody>
         </CAccordionItem>)
     }
@@ -277,7 +265,7 @@ const DatasetDashboard = () => {
           <div className="d-flex flex-row flex-wrap gap-2 justify-content-center mt-2">
             <CButton color="primary" size='lg' onClick={() => {
               setStartTrainVisible(true);
-            }}>Train new model</CButton>
+            }}>Start new training</CButton>
             <CButton color="primary" size='lg' onClick={() => {
               setGenerateVisible(true);
             }}>Generate image</CButton>

@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
-import { getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
-import { CAlert, CButton, CForm, CFormInput, CFormLabel, CFormSelect, CFormSwitch, CInputGroup, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from "@coreui/react";
-import { cilWarning } from "@coreui/icons";
+import { findName, getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
+import { CAlert, CButton, CFormInput, CFormLabel, CFormSwitch, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
+import { cilCheck, cilWarning } from "@coreui/icons";
 import LoadingButton from "../../components/LoadingButton";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
+import LabelImage from "../../components/LabelImage";
+import TranparentButton from "../../components/TransparentButton";
 
 const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizingList, augmentationList, modelList, dataset }) => {
+  const [currentPage, setCurrentPage] = useState(0);
+  const [serverStatus, setServerStatus] = useState(null);
+  const [serverStatusMessage, setServerStatusMessage] = useState(null);
   const [formData, setFormData] = useState({
     "dataset": "",
     "downsizing": "",
@@ -20,42 +25,42 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
 
   const shapeList = [
     {
-      label: "64x64",
-      value: "64x64"
+      id: "64x64",
+      name: "64x64"
     },
     {
-      label: "128x128",
-      value: "128x128"
+      id: "128x128",
+      name: "128x128"
     },
     {
-      label: "256x256",
-      value: "256x256"
+      id: "256x256",
+      name: "256x256"
     }
   ]
 
   useEffect(() => {
     if (modalVisible) {
-      const newFormData = { ...formData };
-      if (serverList.length > 0) {
-        const lastTrainServer = getLocal('last-train-server');
-        if (lastTrainServer && serverList.some(server => server.id === lastTrainServer)) {
-          newFormData["sshServer"] = lastTrainServer;
-        } else {
+      let newFormData;
+      if (getLocal('last-training')) {
+        newFormData = { ...getLocal('last-training') };
+      } else {
+        newFormData = { ...formData };
+        if (serverList.length > 0) {
           newFormData["sshServer"] = serverList[0].id;
         }
-      }
-      if (downsizingList.length > 0) {
-        newFormData["downsizing"] = downsizingList[0].id;
-      }
-      if (shapeList.length > 0) {
-        newFormData["shape"] = shapeList[0].value;
-      }
-      if (augmentationList.length > 0) {
-        newFormData["augmentations"] = Object.fromEntries(augmentationList.map(augmentation => [augmentation.id, false]));
-      }
-      if (modelList.length > 0) {
-        newFormData["model"] = modelList[0].id
-        newFormData["hyperparameters"] = Object.fromEntries(modelList[0].hyperparameters.map(hp => [hp.id, hp.default]))
+        if (downsizingList.length > 0) {
+          newFormData["downsizing"] = downsizingList[0].id;
+        }
+        if (shapeList.length > 0) {
+          newFormData["shape"] = shapeList[0].id;
+        }
+        if (augmentationList.length > 0) {
+          newFormData["augmentations"] = Object.fromEntries(augmentationList.map(augmentation => [augmentation.id, false]));
+        }
+        if (modelList.length > 0) {
+          newFormData["model"] = modelList[0].id
+          newFormData["hyperparameters"] = Object.fromEntries(modelList[0].hyperparameters.map(hp => [hp.id, hp.default]))
+        }
       }
       newFormData["dataset"] = dataset;
       newFormData["sessionName"] = `model-${getDateTime()}`;
@@ -63,8 +68,27 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     } else {
       setWaitingRespone(false);
       setErrorMessage("");
+      setCurrentPage(0);
+      setServerStatus(null);
+      setServerStatusMessage(null);
     }
   }, [modalVisible]);
+
+  const ServerStatus = () => (
+    serverStatusMessage != null ? (
+
+      serverStatus != null ? (serverStatus == 0 ?
+        <div className="text-success">
+          <CIcon icon={cilCheck} /> {serverStatusMessage}
+        </div> :
+        <div className="text-danger">
+          <CIcon icon={cilWarning} /> {serverStatusMessage}
+        </div>)
+        : <div className="text-info">
+          <CSpinner size="sm" /> {serverStatusMessage}
+        </div>
+    ) : null
+  )
 
   const handleChange = (e) => {
     setFormData({
@@ -73,15 +97,23 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     });
   };
 
-  const handleModelChange = (e) => {
+  const handleRadioChange = (key, value) => {
     setFormData({
       ...formData,
-      model: e.target.value,
-      hyperparameters: Object.fromEntries(modelList.find(model => model.id == e.target.value).hyperparameters.map(hp => [hp.id, hp.default])),
+      [key]: value,
+    });
+  };
+
+  const handleModelChange = (value) => {
+    setFormData({
+      ...formData,
+      model: value,
+      hyperparameters: Object.fromEntries(modelList.find(model => model.id == value).hyperparameters.map(hp => [hp.id, hp.default])),
     });
   };
 
   const handleAugmentationChange = (e) => {
+    console.log(formData.augmentations)
     setFormData({
       ...formData,
       augmentations: {
@@ -107,7 +139,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     e.preventDefault();
     setWaitingRespone(true);
     setErrorMessage("");
-    storeLocal('last-train-server', formData.sshServer);
+    storeLocal('last-training', formData)
     axios.post(`${getBackendURL()}/servers/${formData.sshServer}/train`, formData, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
@@ -120,62 +152,133 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
       });
   }
 
-  return <CModal
-    scrollable
-    visible={modalVisible}
-    onClose={() => setModalVisible(false)}
-    size="lg"
-  >
-    <CModalHeader>
-      <CModalTitle>Train</CModalTitle>
-    </CModalHeader>
-    <CModalBody>
-      {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
-      <CForm id="trainConfig">
-        <CInputGroup>
-          <CFormSelect
-            id="downsizing"
-            floatingLabel="Downsizing method"
-            options={downsizingList.map(downsizing => ({
-              label: downsizing.name,
-              value: downsizing.id
-            }))}
-            onChange={handleChange}
-          />
-          <CFormSelect
-            id="shape"
-            floatingLabel="Shape"
-            options={shapeList}
-            onChange={handleChange}
-          />
-        </CInputGroup>
-        <div className="form-floating">
-          <div className="form-control mt-2" style={{ height: 'unset', paddingTop: '2rem' }}>
-            {augmentationList.map(augmentation => (
-              <CFormSwitch
-                key={augmentation.id}
-                id={augmentation.id}
-                label={augmentation.name}
-                checked={formData["augmentations"][augmentation.id]}
-                onChange={(e) => handleAugmentationChange(e)}
-                color="primary"
-              />
-            ))}
+  const handleNextPage = () => {
+    if (currentPage == 0) {
+      setServerStatus(null);
+      setServerStatusMessage(`Syncing ${findName(serverList, formData.sshServer)}...`)
+      axios.post(`${getBackendURL()}/servers/${formData.sshServer}/sync`, null, {
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        }
+      }).then((_) => {
+        setServerStatus(0);
+        setServerStatusMessage(`${findName(serverList, formData.sshServer)} ready`);
+      }).catch((_) => {
+        setServerStatus(1);
+        setServerStatusMessage(`${findName(serverList, formData.sshServer)} couldn't be synced`);
+      });
+    }
+    if (currentPage == pages.length - 2) {
+      setFormData({
+        ...formData,
+        sessionName: `model-${getDateTime()}`
+      });
+    }
+    if (currentPage < pages.length - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+
+
+  const pages = [
+    {
+      content: (
+        <div className="d-flex flex-column gap-3 align-items-center justify-content-center" >
+          <div>
+            <CFormLabel className="w-100 text-center">SSH server</CFormLabel>
+            <div className="d-flex flex-row flex-wrap gap-2 justify-content-center">
+              {serverList.map(
+                server => <LabelImage
+                  key={server.id}
+                  svg={server.icon}
+                  label={server.name}
+                  onClick={() => handleRadioChange('sshServer', server.id)}
+                  selected={server.id == formData.sshServer} />
+              )}
+            </div>
           </div>
-          <CFormLabel>Augmentation methods</CFormLabel>
         </div>
-        <CFormSelect className="mt-2"
-          id="model"
-          floatingLabel="Model"
-          options={modelList.map(model => ({
-            label: model.name,
-            value: model.id
-          }))}
-          value={formData["model"]}
-          onChange={handleModelChange}
-        />
-        {modelList.filter(model => model.id == formData["model"]).map(model => (
-          model["hyperparameters"].map(hp =>
+      )
+    },
+    {
+      content: (
+        <div className="d-flex flex-column gap-3 align-items-center justify-content-center">
+
+          <div>
+            <CFormLabel className="w-100 text-center">Downsizing method</CFormLabel>
+            <div className="d-flex flex-row flex-wrap gap-2 justify-content-center">
+              {downsizingList.map(
+                downsizing => <LabelImage
+                  key={downsizing.id}
+                  svg={downsizing.icon}
+                  label={downsizing.name}
+                  onClick={() => handleRadioChange('downsizing', downsizing.id)}
+                  selected={downsizing.id == formData.downsizing} />
+              )}
+            </div>
+          </div>
+          <div>
+            <CFormLabel className="w-100 text-center">Shape</CFormLabel>
+            <div className="d-flex flex-row flex-wrap gap-2 justify-content-center">
+              {shapeList.map(
+                shape => <TranparentButton
+                  key={shape.id}
+                  label={shape.name}
+                  onClick={() => handleRadioChange('shape', shape.id)}
+                  selected={shape.id == formData.shape} />
+              )}
+            </div>
+          </div>
+        </div>
+      )
+    },
+    // random split, validation proportion
+    {
+      content: (
+        <div>
+          <CFormLabel className="w-100 text-center">Augmentation methods</CFormLabel>
+          {augmentationList.map(augmentation => (
+            <CFormSwitch
+              key={augmentation.id}
+              id={augmentation.id}
+              label={augmentation.name}
+              checked={formData["augmentations"][augmentation.id]}
+              onChange={handleAugmentationChange}
+              color="primary"
+            />
+          ))}
+        </div>
+      )
+    },
+    {
+      content: (
+        <div>
+          <CFormLabel className="w-100 text-center">Model</CFormLabel>
+          <div className="d-flex flex-row flex-wrap gap-2 justify-content-center">
+            {modelList.map(
+              model => <LabelImage
+                key={model.id}
+                svg={model.icon}
+                label={model.name}
+                onClick={() => handleModelChange(model.id)}
+                selected={model.id == formData.model}></LabelImage>
+            )}
+          </div>
+        </div>
+      )
+    },
+    {
+      content: (
+        <div style={{ minWidth: '400px' }}>
+          <CFormLabel className="w-100 text-center">Hyperparameters</CFormLabel>
+          {modelList.find(model => model.id == formData.model)?.hyperparameters.map(hp =>
           (
             <CFormInput className="mt-2"
               key={hp.id}
@@ -185,30 +288,71 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
               value={formData["hyperparameters"][hp.id]}
               onChange={handleHyperparameterChange}
             />
-          ))
-        ))}
-        <CFormInput className="mt-2"
-          id="sessionName"
-          type="text"
-          floatingLabel="Session name"
-          value={formData["sessionName"]}
-          onChange={handleChange}
-        />
-        <CFormSelect className="mt-2"
-          id="sshServer"
-          floatingLabel="SSH server"
-          options={serverList.map(server => ({
-            label: server.name,
-            value: server.id
-          }))}
-          value={formData["sshServer"]}
-          onChange={handleChange}
-        />
-      </CForm>
+          ))}
+        </div>
+      )
+    },
+    {
+      content: (
+        <div className="d-flex flex-column gap-3 align-items-center justify-content-center" >
+          <div className="border rounded p-2 w-100">
+            Downsizing: {findName(downsizingList, formData.downsizing)} {findName(shapeList, formData.shape)}
+            <br />
+            Augmentations: {Object.keys(formData.augmentations).length == 0 ? (<>None</>) :
+              Object.entries(formData.augmentations).filter(([key, value]) => value == true).map(([key, value]) => (<span key={key}><br /> - {findName(augmentationList, key)}</span>))
+            }
+            <br />
+            Model: {findName(modelList, formData.model)}
+            <br />
+            Hyperparameters: {Object.keys(formData.hyperparameters).length == 0 ? (<>None</>) :
+              Object.entries(formData.hyperparameters).map(([key, value]) => (<span key={key}><br /> - {findName(modelList.find(model => model.id == formData.model)?.hyperparameters, key)}: {value}</span>))
+            }
+
+          </div>
+          <CFormInput className="w-100"
+            id="sessionName"
+            type="text"
+            floatingLabel="Session name"
+            value={formData["sessionName"]}
+            onChange={handleChange}
+            style={{ minWidth: '400px' }}
+          />
+        </div>
+      )
+    }
+  ]
+
+  return <CModal
+    scrollable
+    visible={modalVisible}
+    onClose={() => setModalVisible(false)}
+    size="lg"
+  >
+    <CModalHeader>
+      <CModalTitle>New training</CModalTitle>
+    </CModalHeader>
+    <CModalBody className="d-flex flex-column align-items-center justify-content-center" style={{ minHeight: '400px' }}>
+      {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
+      {pages[currentPage].content}
     </CModalBody>
     <CModalFooter>
-      <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancel</CButton>
-      <LoadingButton loadingVisible={watingResponse} color="primary" type="submit" onClick={handleSubmit}>Start training</LoadingButton>
+      <ServerStatus />
+      <div className="flex-grow-1"></div>
+
+      {currentPage > 0 ?
+        <CButton color="secondary" onClick={handlePrevPage}>Previous</CButton> :
+        <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancel</CButton>
+      }
+      {currentPage < pages.length - 1 ?
+        <CButton color="primary" onClick={handleNextPage}>Next</CButton> :
+        <LoadingButton
+          loadingVisible={watingResponse}
+          disabled={serverStatus != 0}
+          color="primary"
+          type="submit"
+          onClick={handleSubmit}
+        >Start training</LoadingButton>
+      }
     </CModalFooter>
   </CModal>
 }

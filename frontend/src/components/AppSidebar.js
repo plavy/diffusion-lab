@@ -48,10 +48,6 @@ const AppSidebar = () => {
       component: CNavItem,
       name: 'Overview',
       to: '/',
-      badge: {
-        color: 'info',
-        text: 'HOME',
-      },
     },
     {
       component: CNavTitle,
