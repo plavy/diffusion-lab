@@ -113,7 +113,7 @@ const Overview = () => {
             <h2>Servers</h2>
             <CListGroup className="flex-grow-1 overflow-auto">
               {serverList.map(server =>
-                <CListGroupItem key={server.id} as="a" href={`/servers/${server.id}`}>
+                <CListGroupItem key={server.id} as="a" href={`/#/servers/${server.id}`}>
                   <div className="d-flex flex-row gap-1 align-items-center justify-content-between">
                     <h5 className="mb-1">{server.name}</h5>
                     <ServerStatus serverId={server.id} />
@@ -134,7 +134,7 @@ const Overview = () => {
                     {Object.values(sessions).
                       filter(session => !session.error && !session.uploadDone && session.trainingProgress != "100")
                       .map(session => (
-                        <CListGroupItem key={session.sessionName} as="a" href={`/datasets/${session.dataset}`}>
+                        <CListGroupItem key={session.sessionName} as="a" href={`/#/datasets/${session.dataset}`}>
                           <h6 className="mb-1">{session.sessionName}
                             <CBadge className="m-1" color="secondary">{session.trainingProgress}%</CBadge></h6>
                           <small>{findName(datasetList, session.dataset)}</small>

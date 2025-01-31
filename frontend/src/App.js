@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
 import { CSpinner, useColorModes } from '@coreui/react'
@@ -31,7 +31,7 @@ const App = () => {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <BrowserRouter future={{v7_relativeSplatPath: true, v7_startTransition: true}}>
+    <HashRouter future={{v7_relativeSplatPath: true, v7_startTransition: true}}>
       <Suspense
         fallback={
           <div className="pt-3 text-center">
@@ -76,7 +76,7 @@ const App = () => {
           })}
         </Routes>
       </Suspense>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
 
