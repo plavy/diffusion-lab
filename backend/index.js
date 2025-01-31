@@ -2,7 +2,6 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 
-
 const processAuth = (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -22,21 +21,21 @@ app.use(cors());
 app.use(express.json());
 app.use(processAuth);
 
-app.get('/', (req, res) => {
-  res.send('hello')
+app.get('/api', (req, res) => {
+  res.send('Hello from Backend')
 })
 
 // Routes
 const datasetsRoute = require('./routes/datasets');
-app.use('/datasets', datasetsRoute);
+app.use('/api/datasets', datasetsRoute);
 const downsizingsRoute = require('./routes/downsizings');
-app.use('/downsizings', downsizingsRoute);
+app.use('/api/downsizings', downsizingsRoute);
 const augmentationsRoute = require('./routes/augmentations');
-app.use('/augmentations', augmentationsRoute);
+app.use('/api/augmentations', augmentationsRoute);
 const modelsRoute = require('./routes/models');
-app.use('/models', modelsRoute);
+app.use('/api/models', modelsRoute);
 const sshServersRoute = require('./routes/ssh-servers');
-app.use('/servers', sshServersRoute);
+app.use('/api/servers', sshServersRoute);
 
 const port = process.env.port || 8000;
 
