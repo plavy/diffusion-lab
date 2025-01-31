@@ -1,5 +1,7 @@
 FROM node:23 AS builder
 
+ARG VITE_BACKEND_URL
+
 WORKDIR /app
 
 COPY ./package*.json ./

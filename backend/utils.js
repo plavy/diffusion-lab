@@ -24,7 +24,7 @@ exports.toSSHConfig = function toSSHConfig(metadata) {
     port: metadata.port,
     username: metadata.username,
     // privateKey: require('fs').readFileSync('/home/plavy/.ssh/id_rsa')
-    privateKey: require('fs').readFileSync('/Users/tinplavec/.ssh/id_ed25519')
+    privateKey: require('fs').readFileSync(process.env.SSH_PRIVATE_KEY_PATH || '/Users/tinplavec/.ssh/id_ed25519')
   };
 
 }
