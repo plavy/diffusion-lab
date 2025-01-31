@@ -2,7 +2,7 @@ import { CAlert, CButton, CModal, CModalBody, CModalFooter, CModalHeader, CModal
 import axios from "axios";
 import { getAuthHeader, getBackendURL } from "../../utils";
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useFetcher, useNavigate } from "react-router-dom";
 import LoadingButton from "../../components/LoadingButton";
 import CIcon from "@coreui/icons-react";
 import { cilCheck, cilWarning } from "@coreui/icons";
@@ -68,14 +68,16 @@ const NewDatasetModal = ({ modalVisible, setModalVisible, inputFiles, setInputFi
 
   useEffect(() => {
     if (modalVisible) {
-      check();
-      console.log(files)
     } else {
       setWaitingRespone(false);
       setErrorMessage("");
       setFiles([]);
     }
-  }, [modalVisible, files]);
+  }, [modalVisible]);
+
+  useEffect(() => {
+    check();
+  }, [files])
 
 
   return (
