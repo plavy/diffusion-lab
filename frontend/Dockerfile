@@ -8,8 +8,8 @@ COPY ./package*.json ./
 RUN npm install
 
 COPY . .
-RUN npm build
+RUN npm run build
 
-CMD ["npm", "serve"]
+CMD ["npm", "run", "serve"]
 
 EXPOSE 3000
