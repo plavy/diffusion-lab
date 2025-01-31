@@ -23,7 +23,7 @@ jobs:
         --file Dockerfile \
         --build-arg SSH_PRIVATE_KEY="${{ secrets.SSH_PRIVATE_KEY }}" \
         --build-arg SSH_PUBLIC_KEY="${{ secrets.SSH_PUBLIC_KEY }}" \
-        --tag ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }} \    
+        --tag ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }} \
         . 
     - name: Push the Docker image
       run: docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
@@ -46,7 +46,7 @@ jobs:
       run: |
         docker build \
         --file Dockerfile \
-        --build-arg VITE_BACKEND_URL="${{ secrets.BACKEND_URL }}"
+        --build-arg VITE_BACKEND_URL="${{ secrets.BACKEND_URL }}" \
         --tag ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/frontend:${{ github.sha }} \
         .
     - name: Push the Docker image
