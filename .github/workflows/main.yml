@@ -3,7 +3,7 @@ on:
   push:
     branches: [ "main" ]
 jobs:
-  build:
+  build_backend:
     name: Build backend
     runs-on: ubuntu-24.04
     defaults:
@@ -23,12 +23,14 @@ jobs:
       run: docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
   trigger:
     name: Trigger deploy
+    needs: build_backend
     runs-on: ubuntu-24.04
     steps:
     - name: Trigger GitLab pipeline
-      uses: ghcr.io/appleboy/gitlab-ci-action@v1.3.0
-      with:
-        host: ${{ secrets.GITLAB_REPO_HOST }}
-        token: ${{ secrets.GITLAB_REPO_TOKEN }}
-        project_id: ${{ secrets.GITLAB_REPO_ID }}
-        variables: COMMIT_SHA=${{ github.sha }}
+      run: |
+        curl -X POST \
+        --fail \
+        -F token=${{ secrets.GITLAB_TRIGGER_TOKEN }} \
+        -F ref=main \
+        -F "variables[COMMIT_SHA]=${{ github.sha }}" \
+        ${{ secrets.GITLAB_TRIGGER_URL }}
