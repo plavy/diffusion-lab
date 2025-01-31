@@ -19,7 +19,7 @@ export function findName(list, id) {
 }
 
 export function getBackendURL() {
-  return import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
+  return import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000/api';
 }
 
 export function storeAuth(authDict) {

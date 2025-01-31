@@ -5,7 +5,7 @@ import axios from "axios";
 import { getAuthHeader, getBackendURL, getLocal, updateServerList } from "../../utils";
 import { CAlert, CButton, CContainer, CForm, CFormInput, CSpinner } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
-import { cilCheck, cilWarning } from "@coreui/icons";
+import { cilCheck, cilNotes, cilWarning } from "@coreui/icons";
 import { useDispatch } from "react-redux";
 import LoadingButton from "../../components/LoadingButton";
 
@@ -45,7 +45,7 @@ const ServerDashboard = () => {
     }
   }, [id]);
 
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(null);
   useEffect(() => {
     updateServerList(dispatch);
     setStatus("");
@@ -65,7 +65,11 @@ const ServerDashboard = () => {
           <CIcon icon={cilCheck} /> {status.message}
         </CAlert> :
         <CAlert id="statusFail" color="danger">
-          <CIcon icon={cilWarning} /> {status.message}
+          <CIcon icon={cilWarning} /> {status.message}. 
+          Make sure that the public key of Diffusion Lab is added to SSH known hosts:
+          <div className="bg-body-secondary rounded p-2 text-body">
+            <div>{status.publicKey}</div>
+          </div>
         </CAlert>
       ) :
       <CAlert id="statusChecking" color="info">
@@ -89,7 +93,7 @@ const ServerDashboard = () => {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
-      .then(_ => { window.location.reload(); setUpdateLoading(false)});
+      .then(_ => { window.location.reload(); setUpdateLoading(false) });
   };
 
   const [syncingLoading, setSyncingLoading] = useState(false);

@@ -8,6 +8,7 @@ const SSH2Promise = require('ssh2-promise');
 const SCPClient = require('node-scp').Client;
 const { toSSHConfig, ensureVariable, parseCsv } = require('../utils');
 
+const publicKey = process.env.SSH_PUBLIC_KEY_PATH || '/Users/tinplavec/.ssh/id_ed25519.pub'
 const serverDir = 'diffusion-lab/ssh-servers/';
 const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/';
@@ -96,24 +97,25 @@ router.delete('/:id', async (req, res) => {
 
 // Get status of SSH server
 router.get('/:id/status', async (req, res) => {
+  const publicKeyString = require('fs').readFileSync(publicKey).toString();
   const id = req.params.id;
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const metadata = JSON.parse(await dav.getFileContents(serverDir + id + "/" + metadataFile, { format: "text" }));
     const ssh = new SSH2Promise({ ...toSSHConfig(metadata), readyTimeout: 4000, reconnect: false });
+
     try {
       await ssh.connect();
-      res.json({ code: 0, message: "Server reachable" });
-    } catch (e) {
-      if (e.level == "client-authentication")
-        res.json({ code: 1, message: "Authentication failed" });
+      res.json({ code: 0, message: "Server reachable", publicKey: publicKeyString });
+    } catch (error) {
+      if (error.level == "client-authentication")
+        res.json({ code: 1, message: "Authentication failed", publicKey: publicKeyString });
       else
-        res.json({ code: 1, message: "Server unreachable" });
-      // console.log(e);
+        res.json({ code: 1, message: "Server unreachable", publicKey: publicKeyString });
+      console.error('Error for /servers/:id/status for', id, ':', error.message);
     } finally {
       ssh.close();
     }
-
   } catch (error) {
     res.status(500).json({ code: 1, message: "Interal server error" });
     console.error('Error for /servers/:id/status for', id, ':', error.message);
