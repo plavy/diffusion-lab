@@ -4,7 +4,7 @@ on:
     branches: [ "main" ]
 jobs:
   build_backend:
-    name: Build backend
+    name: Build Backend
     runs-on: ubuntu-24.04
     defaults:
       run:
@@ -21,9 +21,29 @@ jobs:
       run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
     - name: Push the Docker image
       run: docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
+  build_frontend:
+    name: Build Frontend
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+    - uses: actions/checkout@v3
+    - name: Login to Docker registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ secrets.DOCKER_REGISTRY_URL }}
+        username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
+        password: ${{ secrets.DOCKER_REGISTRY_TOKEN }}
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/frontend:${{ github.sha }}
+    - name: Push the Docker image
+      run: docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/frontend:${{ github.sha }}
   trigger:
     name: Trigger deploy
-    needs: build_backend
+    needs:
+      - build_backend
+      - build_frontend
     runs-on: ubuntu-24.04
     steps:
     - name: Trigger GitLab pipeline
