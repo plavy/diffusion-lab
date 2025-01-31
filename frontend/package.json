@@ -39,12 +39,12 @@
     "simplebar-react": "^3.2.6",
     "postcss": "^8.4.47",
     "prettier": "3.3.3",
+    "autoprefixer": "^10.4.20",
     "sass": "^1.79.3",
     "vite": "^5.4.8",
     "@vitejs/plugin-react": "^4.3.1"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.20",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.2.1",
