@@ -7,5 +7,6 @@ scikit-image
 pytorch-lightning==1.9.3
 diffusers==0.31.0
 einops
+accelerate
 Pillow
 webdavclient3

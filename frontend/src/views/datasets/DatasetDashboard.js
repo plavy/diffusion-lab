@@ -251,7 +251,7 @@ const DatasetDashboard = () => {
           </CContainer>
         </div>
 
-        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2, minWidth: "350px" }}>
+        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 2, minWidth: "400px" }}>
           <h2>Training sessions</h2>
 
           <div className="flex-grow-1 overflow-auto">

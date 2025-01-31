@@ -235,7 +235,7 @@ router.post('/:id/train', async (req, res) => {
   try {
     const datasetId = ensureVariable("Dataset", req.body.dataset);
     const sessionName = ensureVariable("Session name", req.body.sessionName);
-    const cwd = `${sessionDir}/${datasetId}/${sessionName}`
+    const cwd = `${sessionDir}${datasetId}/${sessionName}`
 
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
@@ -253,16 +253,15 @@ router.post('/:id/train', async (req, res) => {
     --dav-url '${req.auth.baseUrl}' \
     --dav-username '${req.auth.username}' \
     --dav-password '${req.auth.password}' \
-    --dataset-dir '${datasetDir}/${datasetId}' \
+    --dataset-dir '${datasetDir}${datasetId}' \
     --training-dir '${cwd}' \
     --metadata-file '${cwd}/${metadataFile}' \
-    " >> tmp.sh;
+    " > tmp.sh;
     
     tmux new-session -d -s ${sessionName} " \
     bash tmp.sh;
     sleep 300";`;
-    // qsub -N diffusion-lab -l select=1:ngpus=1 tmp.sh;
-    console.log(command)
+    // qsub -N diffusion-lab -q gpu -l select=1:ngpus=1 -v https_proxy="http://10.150.1.1:3128" tmp.sh;
     const response2 = await ssh.exec(command);
     ssh.close();
 

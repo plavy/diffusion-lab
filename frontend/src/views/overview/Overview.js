@@ -38,6 +38,7 @@ const Overview = () => {
       </div>
   )
 
+  const autoRefresh = useSelector((state) => state.autoRefresh);
   const datasetList = useSelector((state) => state.datasetList);
   const serverList = useSelector((state) => state.serverList);
 
@@ -69,20 +70,28 @@ const Overview = () => {
   }
 
   const [sessions, setSessions] = useState({});
-  const getTrainings = async () => {
+  const getAllSessions = async () => {
     for (const dataset of datasetList) {
       axios.get(`${getBackendURL()}/datasets/${dataset.id}/sessions`, {
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
-      }).then((res) => res.data.map(session => setSessions({
+      }).then((res) => res.data.map(session => setSessions(sessions => ({
         ...sessions,
         [`${dataset.id}-${session.sessionName}`]: session,
-      })));
+      }))));
     }
   }
   useEffect(() => {
-    getTrainings();
+    if (autoRefresh) {
+      const interval = setInterval(() => {
+        getAllSessions();
+      }, 4000);
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh, datasetList])
+  useEffect(() => {
+    getAllSessions();
   }, [datasetList])
 
   return (

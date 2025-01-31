@@ -114,12 +114,15 @@ def train(args):
         model = load_model(metadata.get('model')).construct(hyperparameters, (crop_x, crop_y))
         callbacks = load_model(metadata.get('model')).callbacks()
 
+        print(torch.cuda.is_available())  # Should print True
+        print(torch.cuda.device_count())  # Should print at least 1
+
         trainer = pl.Trainer(
             default_root_dir=os.path.join(args.training_dir),
             max_steps=model.max_steps,
             callbacks=callbacks+[ProgressUpdater(args)],
             accelerator='gpu',
-            devices=[0]
+            devices=1
         )
 
         trainer.fit(model=model, datamodule=data_module)
