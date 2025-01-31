@@ -1,4 +1,4 @@
-FROM node:23
+FROM node:23 AS builder
 
 ENV NODE_ENV production
 
@@ -10,6 +10,12 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-CMD ["npm", "run", "serve"]
+# stage 2
+FROM nginx:alpine
 
-EXPOSE 3000
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
