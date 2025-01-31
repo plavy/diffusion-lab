@@ -21,3 +21,14 @@ jobs:
       run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
     - name: Push the Docker image
       run: docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
+  trigger:
+    name: Trigger deploy
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Trigger GitLab pipeline
+      uses: ghcr.io/appleboy/gitlab-ci-action@v1.3.0
+      with:
+        host: ${{ secrets.GITLAB_REPO_HOST }}
+        token: ${{ secrets.GITLAB_REPO_TOKEN }}
+        project_id: ${{ secrets.GITLAB_REPO_ID }}
+        variables: COMMIT_SHA=${{ github.sha }}
