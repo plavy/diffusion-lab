@@ -3,7 +3,7 @@ on:
   push:
     branches: [ "main" ]
 jobs:
-  build:
+  build_backend:
     name: Build backend
     runs-on: ubuntu-24.04
     defaults:
@@ -21,3 +21,16 @@ jobs:
       run: docker build . --file Dockerfile --tag ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
     - name: Push the Docker image
       run: docker push ${{ secrets.DOCKER_REGISTRY_URL }}/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
+  trigger:
+    name: Trigger deploy
+    needs: build_backend
+    runs-on: ubuntu-24.04
+    steps:
+    - name: Trigger GitLab pipeline
+      run: |
+        curl -X POST \
+        --fail \
+        -F token=${{ secrets.GITLAB_TRIGGER_TOKEN }} \
+        -F ref=main \
+        -F "variables[COMMIT_SHA]=${{ github.sha }}" \
+        ${{ secrets.GITLAB_TRIGGER_URL }}
