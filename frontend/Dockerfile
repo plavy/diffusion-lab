@@ -1,7 +1,5 @@
 FROM node:23 AS builder
 
-ENV NODE_ENV production
-
 WORKDIR /app
 
 COPY ./package*.json ./
