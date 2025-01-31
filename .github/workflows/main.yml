@@ -1,0 +1,21 @@
+name: Build Backend
+on:
+  push:
+    branches: [ "main" ]
+jobs:
+  build:
+    name: Build backend
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+    - uses: actions/checkout@v3
+    - name: Login to Docker registry
+      uses: docker/login-action@v1
+      with:
+        docker-config: ${{ secrets.DOCKER_CONFIG_JSON }}
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag registry.gitlab.com/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
+    - name: Push the Docker image
+      run: docker push registry.gitlab.com/kubernetes-enabled/diffusion-lab-ci/backend:${{ github.sha }}
