@@ -38,7 +38,7 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
     })
       .then(res => { navigate(`/servers/${res.data.id}`) })
       .catch(error => {
-        setErrorMessage(error.response.data)
+        setErrorMessage(error.response.data);
         setWaitingRespone(false);
       });
   };
@@ -56,7 +56,6 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
       scrollable
       visible={modalVisible}
       onClose={() => setModalVisible(false)}
-      aria-labelledby="NewServerModal"
     >
       <CModalHeader>
         <CModalTitle id="NewServerModal">New server</CModalTitle>
@@ -114,4 +113,4 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
   )
 }
 
-export default NewServerModal
+export default NewServerModal;

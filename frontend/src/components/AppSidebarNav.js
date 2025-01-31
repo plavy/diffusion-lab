@@ -6,7 +6,6 @@ import SimpleBar from 'simplebar-react'
 import 'simplebar-react/dist/simplebar.min.css'
 
 import { CBadge, CNavLink, CSidebarNav } from '@coreui/react'
-import { useDropzone } from 'react-dropzone'
 
 export const AppSidebarNav = ({ items }) => {
   const navLink = (name, icon, badge, indent = false) => {
@@ -33,7 +32,7 @@ export const AppSidebarNav = ({ items }) => {
     const { component, name, badge, icon, ...rest } = item
     const Component = component
     return (
-      <Component as="div" key={index} {...getRootProps()}>
+      <Component as="div" key={index}>
         {rest.to || rest.href ? (
           <CNavLink {...(rest.to && { as: NavLink })} {...rest}>
             {navLink(name, icon, badge, indent)}
@@ -44,21 +43,6 @@ export const AppSidebarNav = ({ items }) => {
       </Component>
     )
   }
-  const onDrop = useCallback((acceptedFiles) => {
-    const formData = new FormData();
-    acceptedFiles.forEach((file) => {
-      console.log("File is here!")
-      formData.append("files", file);
-    });
-
-    // axios
-    //   .post("http://localhost:5000/upload", formData, {
-    //     headers: { "Content-Type": "multipart/form-data" },
-    //   })
-    //   .then((response) => console.log(response.data))
-    //   .catch((error) => console.error(error));
-  }, []);
-  const { getRootProps, getInputProps } = useDropzone({ onDrop });
 
   const navGroup = (item, index) => {
     const { component, name, icon, items, to, ...rest } = item
@@ -71,9 +55,6 @@ export const AppSidebarNav = ({ items }) => {
       </Component>
     )
   }
-
-
-
 
   return (
     <CSidebarNav as={SimpleBar}>

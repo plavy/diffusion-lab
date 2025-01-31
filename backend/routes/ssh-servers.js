@@ -335,8 +335,6 @@ router.get('/:id/train/:sessionName/metrics', async (req, res) => {
   }
 });
 
-
-
 // Generate images
 router.post('/:id/generate/:name', async (req, res) => {
   const id = req.params.id;
@@ -355,7 +353,6 @@ router.post('/:id/generate/:name', async (req, res) => {
         --base-name ${baseName} \
         --number '${req.body.numberImages}' \
         `;
-    console.log(command)
     await ssh.exec(command);
     ssh.close();
 

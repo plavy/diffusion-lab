@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from 'react-redux'
 import axios from "axios";
 
@@ -20,12 +20,13 @@ import { AppSidebarNav } from './AppSidebarNav'
 import { logo } from 'src/assets/brand/logo'
 import { sygnet } from 'src/assets/brand/sygnet'
 
+import { useDropzone } from 'react-dropzone'
 import { updateDatasetList, updateServerList } from "../utils";
+import NewDatasetModal from "../views/datasets/NewDatasetModal";
 
 const AppSidebar = () => {
   const dispatch = useDispatch();
   const autoRefresh = useSelector((state) => state.autoRefresh);
-
   const datasetList = useSelector((state) => state.datasetList);
   const serverList = useSelector((state) => state.serverList);
   useEffect(() => {
@@ -42,6 +43,14 @@ const AppSidebar = () => {
       return () => clearInterval(interval);
     }
   }, [autoRefresh])
+
+  const [newDatasetModalVisible, setNewDatasetModalVisible] = useState(false);
+  const [files, setFiles] = useState([]);
+  const onDrop = useCallback((files) => {
+    setFiles(files);
+    setNewDatasetModalVisible(true);
+  }, []);
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
 
   let navigation = [
     {
@@ -90,8 +99,11 @@ const AppSidebar = () => {
   const sidebarShow = useSelector((state) => state.sidebarShow)
 
   return (
+    <>
+    <NewDatasetModal modalVisible={newDatasetModalVisible} setModalVisible={setNewDatasetModalVisible} inputFiles={files} setInputFiles={setFiles}/>
     <CSidebar
-      className="border-end"
+      {...getRootProps()}
+      className={`border-end ${isDragActive ? "bg-secondary" : null}`}
       colorScheme="dark"
       position="fixed"
       unfoldable={unfoldable}
@@ -119,6 +131,8 @@ const AppSidebar = () => {
         /> */}
       </CSidebarFooter>
     </CSidebar>
+    </>
+
   )
 }
 

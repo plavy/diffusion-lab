@@ -2,17 +2,19 @@ const express = require('express');
 const { parseCsv } = require('../utils');
 const router = express.Router();
 const DAVClient = require('webdav').createClient;
+const multer = require("multer");
 
 const datasetDir = 'diffusion-lab/datasets/';
 const sessionDir = 'diffusion-lab/sessions/';
 const dataDir = 'data/';
 const metadataFile = 'metadata.json';
 
+const upload = multer({ storage: multer.memoryStorage() });
 
 // List datasets
 router.get('/', async (req, res) => {
   try {
-    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
     const response = await dav.getDirectoryContents(datasetDir);
 
     const datasets = await Promise.all(
@@ -26,7 +28,29 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     res.status(500).send(error.message || error);
-    console.error('Error for /datasets:', error.message || error);
+    console.error('Error for GET /datasets:', error.message || error);
+  }
+});
+
+// Add dataset
+router.post('/', upload.array("files"), async (req, res) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      throw new Error("No files uploaded");
+    }
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const baseDatasetDir = req.files[0].originalname.replace(/\$/g, "/").split('/')[0]
+    await dav.createDirectory(datasetDir + baseDatasetDir);
+    await dav.createDirectory(datasetDir + baseDatasetDir + '/' + dataDir);
+    await dav.createDirectory(sessionDir + baseDatasetDir);
+    for (const file of req.files) {
+      const path = file.originalname.replace(/\$/g, "/");
+      await dav.putFileContents(datasetDir + path, file.buffer)
+    }
+    res.json({ 'id': baseDatasetDir });
+  } catch (error) {
+    res.status(500).send(error.message || error);
+    console.error('Error for POST /datasets:', error.message || error);
   }
 });
 
@@ -34,7 +58,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   const id = req.params.id;
   try {
-    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
     const metadata = JSON.parse(await dav.getFileContents(datasetDir + id + "/" + metadataFile, { format: "text" }));
     res.json(metadata);
   } catch (error) {
@@ -47,7 +71,7 @@ router.get('/:id', async (req, res) => {
 router.get('/:id/images', async (req, res) => {
   const id = req.params.id;
   try {
-    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
     const response = await dav.getDirectoryContents(datasetDir + id + '/' + dataDir);
 
     const files = response
@@ -66,7 +90,7 @@ router.get('/:id/images/:name', async (req, res) => {
   const id = req.params.id;
   const name = req.params.name;
   try {
-    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
     const readStream = dav.createReadStream(datasetDir + id + '/' + dataDir + name)
     readStream.on('error', (error) => {
       res.status(500).send(error.message || error);
@@ -83,7 +107,7 @@ router.get('/:id/images/:name', async (req, res) => {
 router.get('/:id/sessions', async (req, res) => {
   const id = req.params.id;
   try {
-    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
     const response = await dav.getDirectoryContents(sessionDir + id);
 
     const sessions = await Promise.all(
@@ -123,7 +147,7 @@ router.delete('/:id/sessions/:sessionName', async (req, res) => {
   const id = req.params.id;
   const sessionName = req.params.sessionName;
   try {
-    const dav = DAVClient(req.auth.baseUrl, req.auth)
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
     const _ = await dav.deleteFile(sessionDir + id + '/' + sessionName);
     res.json({ code: 0 });
   } catch (error) {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
 import { getAuthHeader, getBackendURL, getLocal, updateAugmentationList, updateDatasetList, updateDownsizingList, updateModelList, updateServerList } from "../../utils";
@@ -69,6 +69,7 @@ const DatasetDashboard = () => {
   }, [id]);
 
   // Metadata
+  const navigate = useNavigate();
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
     const getMetadata = () => {
@@ -76,7 +77,9 @@ const DatasetDashboard = () => {
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
-      }).then((res) => { setMetadata(res.data); setSiteReady(true); });
+      })
+        .then((res) => { setMetadata(res.data); setSiteReady(true); })
+        .catch((_) => navigate('/404'));
     }
 
     try {

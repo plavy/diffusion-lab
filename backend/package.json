@@ -13,6 +13,7 @@
     "axios": "^1.7.7",
     "cors": "^2.8.5",
     "express": "^4.21.0",
+    "multer": "^1.4.5-lts.1",
     "node-scp": "^0.0.23",
     "p-limit": "^3.1.0",
     "ssh2-promise": "^1.0.3",

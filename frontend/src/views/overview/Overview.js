@@ -6,11 +6,13 @@ import { cilCheck, cilWarning } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
+import NewDatasetModal from "../datasets/NewDatasetModal";
 
 const Overview = () => {
   const dispatch = useDispatch();
 
   const [newServerModalVisible, setNewServerModalVisible] = useState(false);
+  const [newDatasetModalVisible, setNewDatasetModalVisible] = useState(false);
 
   const [davStatus, setDavStatus] = useState(null);
   const updateDavStatus = () => {
@@ -96,7 +98,8 @@ const Overview = () => {
 
   return (
     <>
-      <NewServerModal modalVisible={newServerModalVisible} setModalVisible={setNewServerModalVisible}></NewServerModal>
+      <NewServerModal modalVisible={newServerModalVisible} setModalVisible={setNewServerModalVisible} />
+      <NewDatasetModal modalVisible={newDatasetModalVisible} setModalVisible={setNewDatasetModalVisible} />
 
       <div className="flex-grow-1 d-flex flex-column w-100" style={{ maxWidth: "900px", height: 0 }}>
 
@@ -104,7 +107,7 @@ const Overview = () => {
           <h2>Status</h2>
           <DavStatus />
           <div>{datasetList.length} datasets</div>
-          <CButton color="primary mt-3">Add new dataset</CButton>
+          <CButton className="mt-3" color="primary" onClick={() => setNewDatasetModalVisible(true)}>Add new dataset</CButton>
         </div>
 
         <div className="flex-grow-1 d-flex flex-row flex-wrap gap-3 mt-3" style={{ height: 0 }}>

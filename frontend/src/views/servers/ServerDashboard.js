@@ -26,7 +26,9 @@ const ServerDashboard = () => {
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
-      }).then((res) => { setMetadata(res.data); setSiteReady(true) });
+      })
+      .then((res) => { setMetadata(res.data); setSiteReady(true) })
+      .catch((_) => navigate('/404'));
     }
 
     try {
