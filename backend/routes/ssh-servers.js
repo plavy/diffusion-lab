@@ -42,6 +42,10 @@ router.post('/', async (req, res) => {
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const metadata = req.body;
+    ensureVariable("Display name", req.body.name);
+    ensureVariable("Hostname", req.body.hostname);
+    ensureVariable("Port", req.body.port);
+    ensureVariable("Username", req.body.username);
     const id = metadata.name
       .replace(/[A-Z]/g, char => char.toLowerCase())
       .replace(/[^a-z0-9]/g, '-');
