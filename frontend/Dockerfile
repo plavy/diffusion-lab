@@ -11,3 +11,5 @@ COPY . .
 RUN npm build
 
 CMD ["npm", "serve"]
+
+EXPOSE 3000
