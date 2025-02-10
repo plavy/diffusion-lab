@@ -112,7 +112,7 @@ const Overview = () => {
 
         <div className="flex-grow-1 d-flex flex-row flex-wrap flex-md-nowrap gap-3 mt-3 overflow-auto">
 
-          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: '250px'}}>
+          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px"}}>
             <h2>Servers</h2>
             <CListGroup className="flex-grow-1 overflow-auto">
               {serverList.map(server =>
@@ -128,7 +128,7 @@ const Overview = () => {
               <CButton className="mt-3" color="primary" onClick={() => setNewServerModalVisible(true)}>Add new server</CButton>
             </div>
           </div>
-          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: '250px'}}>
+          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px"}}>
             <h2>Trainings in progress</h2>
             <div className="flex-grow-1 overflow-auto">
               {Object.values(sessions).length > 0 ?
