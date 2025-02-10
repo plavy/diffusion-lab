@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { findName, getAuthHeader, getBackendURL, getDateTime, getLocal, storeLocal } from "../../utils";
+import { findName, getAuthHeader, getBackendURL, getDateTime, getLocal, shapeList, storeLocal, valProportionList } from "../../utils";
 import { CAlert, CButton, CFormInput, CFormLabel, CFormSwitch, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
 import { cilCheck, cilWarning } from "@coreui/icons";
 import LoadingButton from "../../components/LoadingButton";
@@ -23,36 +23,6 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     "sessionName": "",
     "sshServer": "",
   });
-
-  const shapeList = [
-    {
-      id: "64x64",
-      name: "64x64"
-    },
-    {
-      id: "128x128",
-      name: "128x128"
-    },
-    {
-      id: "256x256",
-      name: "256x256"
-    }
-  ]
-
-  const valProportionList = [
-    {
-      id: "0.2",
-      name: "0.2"
-    },
-    {
-      id: "0.3",
-      name: "0.3"
-    },
-    {
-      id: "0.4",
-      name: "0.4"
-    }
-  ]
 
   useEffect(() => {
     if (modalVisible) {
@@ -341,7 +311,6 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
             Hyperparameters: {Object.keys(formData.hyperparameters).length == 0 ? (<>None</>) :
               Object.entries(formData.hyperparameters).map(([key, value]) => (<span key={key}><br /> - {findName(modelList.find(model => model.id == formData.model)?.hyperparameters, key)}: {value}</span>))
             }
-
           </div>
           <CFormInput className="w-100"
             id="sessionName"

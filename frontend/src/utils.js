@@ -1,6 +1,36 @@
 import axios from "axios";
 import { Buffer } from "buffer";
 
+export const shapeList = [
+  {
+    id: "64x64",
+    name: "64x64"
+  },
+  {
+    id: "128x128",
+    name: "128x128"
+  },
+  {
+    id: "256x256",
+    name: "256x256"
+  }
+]
+
+export const valProportionList = [
+  {
+    id: "0.2",
+    name: "0.2"
+  },
+  {
+    id: "0.3",
+    name: "0.3"
+  },
+  {
+    id: "0.4",
+    name: "0.4"
+  }
+]
+
 export function getDateTime() {
   const now = new Date();
 

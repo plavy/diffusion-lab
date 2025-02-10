@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import classNames from 'classnames';
 import axios from "axios";
-import { getAuthHeader, getBackendURL, getLocal, updateAugmentationList, updateDatasetList, updateDownsizingList, updateModelList, updateServerList } from "../../utils";
+import { findName, getAuthHeader, getBackendURL, getLocal, updateAugmentationList, updateDatasetList, updateDownsizingList, updateModelList, updateServerList } from "../../utils";
 import { useSelector, useDispatch } from 'react-redux';
 
 import {
@@ -173,7 +173,7 @@ const DatasetDashboard = () => {
           <CAccordionBody>
             {session.error ? session.error : (
               <>
-                Model: {modelList.find(model => model.id == session.model)?.name}
+                Model: {findName(modelList, session.model)}
                 <br />
                 Hyperparameters: {
                   JSON.stringify(session.hyperparameters).replaceAll('"', '')
@@ -279,7 +279,7 @@ const DatasetDashboard = () => {
       <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} dataset={id} />
       <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
       <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
-      <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} session={selectedSession} dataset={id} />
+      <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} session={selectedSession} dataset={id}/>
       <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} session={selectedSession} />
 
       <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={sessions} session={selectedSession} dataset={id} />

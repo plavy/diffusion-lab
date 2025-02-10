@@ -106,7 +106,7 @@ const Overview = () => {
         <div className="bg-body rounded-4 p-3">
           <h2>Status</h2>
           <DavStatus />
-          <div>{datasetList.length} datasets</div>
+          <div>Number of datasets: {datasetList.length}</div>
           <CButton className="mt-3" color="primary" onClick={() => setNewDatasetModalVisible(true)}>Add new dataset</CButton>
         </div>
 

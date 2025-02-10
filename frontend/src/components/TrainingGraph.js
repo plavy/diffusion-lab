@@ -6,7 +6,7 @@ import { CChart, CChartLine } from '@coreui/react-chartjs'
 import zoomPlugin from 'chartjs-plugin-zoom';
 ChartJS.register(...registerables, zoomPlugin);
 
-export const TrainingGraph = ({ epoch, trainLoss, valLoss, clearView }) => {
+export const TrainingGraph = ({ epoch, trainLoss, valLoss, clearView, ...props }) => {
   const chartRef = useRef(null);
 
   useEffect(() => {
@@ -120,6 +120,10 @@ export const TrainingGraph = ({ epoch, trainLoss, valLoss, clearView }) => {
     },
     scales: {
       x: {
+        title: {
+          display: true,
+          text: 'Epochs'
+        },
         grid: {
           display: false
         },
@@ -138,7 +142,7 @@ export const TrainingGraph = ({ epoch, trainLoss, valLoss, clearView }) => {
       },
     },
   }
-  return <CChartLine data={data} options={options} />
+  return <CChartLine {...props} data={data} options={options} />
 }
 
 export default TrainingGraph;

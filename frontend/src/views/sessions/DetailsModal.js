@@ -1,5 +1,5 @@
 import { CAlert, CButton, CFormCheck, CFormSwitch, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
-import { getAuthHeader, getBackendURL } from "../../utils";
+import { findName, getAuthHeader, getBackendURL, shapeList, valProportionList } from "../../utils";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
@@ -7,7 +7,7 @@ import { cilWarning } from "@coreui/icons";
 import TrainingGraph from "../../components/TrainingGraph";
 
 
-const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
+const DetailsModal = ({ modalVisible, setModalVisible, serverList, downsizingList, augmentationList, modelList, session, dataset }) => {
   const [watingResponse, setWaitingRespone] = useState(true);
   const [errorMesage, setErrorMessage] = useState("");
   const [metrics, setMetrics] = useState(null);
@@ -15,7 +15,7 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
 
   // Start, end, duration of training
 
-  const getLogs = async () => {
+  const getMetrics = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
     const metricsUrl = session.uploadDone ? `${getBackendURL()}/datasets/${dataset}/sessions/${session.sessionName}/metrics`
@@ -27,7 +27,8 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
     })
       .then(res => {
         setMetrics(res.data);
-        setWaitingRespone(false); })
+        setWaitingRespone(false);
+      })
       .catch(error => {
         setErrorMessage(error.response.data)
         setWaitingRespone(false);
@@ -36,7 +37,7 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
 
   useEffect(() => {
     if (modalVisible) {
-      getLogs();
+      getMetrics();
     } else {
       setWaitingRespone(false);
       setErrorMessage("");
@@ -55,7 +56,7 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
     size="xl"
   >
     <CModalHeader>
-      <CModalTitle>Details</CModalTitle>
+      <CModalTitle>Details for {session?.sessionName}</CModalTitle>
     </CModalHeader>
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
@@ -64,9 +65,28 @@ const DetailsModal = ({ modalVisible, setModalVisible, session, dataset }) => {
       </div>
         : null
       }
-      {metrics ? <>
-        <TrainingGraph epoch={metrics.epoch} trainLoss={metrics.train_loss} valLoss={metrics.val_loss} clearView={clearView} />
-      </>
+      {metrics ? <div className="d-flex flex-row gap-1 flex-wrap jutify-items-center align-items-center">
+        <div className="border rounded p-2">
+          Downsizing: {findName(downsizingList, session.downsizing)} {findName(shapeList, session.shape)}
+          <br />
+          Augmentations: {Object.entries(session.augmentations).filter(([key, value]) => value == true).length == 0 ? (<>None</>) :
+            Object.entries(session.augmentations).filter(([key, value]) => value == true).map(([key, value]) => (<span key={key}><br /> - {findName(augmentationList, key)}</span>))
+          }
+          <br />
+          Validation split proportion: {findName(valProportionList, session.validationSplitProportion)}
+          <br />
+          Model: {findName(modelList, session.model)}
+          <br />
+          Hyperparameters: {Object.keys(session.hyperparameters).length == 0 ? (<>None</>) :
+            Object.entries(session.hyperparameters).map(([key, value]) => (<span key={key}><br /> - {findName(modelList.find(model => model.id == session.model)?.hyperparameters, key)}: {value}</span>))
+          }
+          <br />
+          SSH server: {findName(serverList, session.sshServer)}
+          <br />
+          Steps done: {Number(metrics.step?.at(-1)) + 1}
+        </div>
+        <TrainingGraph className="flex-grow-1" epoch={metrics.epoch} trainLoss={metrics.train_loss} valLoss={metrics.val_loss} clearView={clearView} />
+      </div>
         : null
       }
     </CModalBody>
