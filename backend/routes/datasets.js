@@ -148,7 +148,7 @@ router.delete('/:id/sessions/:sessionName', async (req, res) => {
   const sessionName = req.params.sessionName;
   try {
     const dav = DAVClient(req.auth.baseUrl, req.auth);
-    const _ = await dav.deleteFile(sessionDir + id + '/' + sessionName);
+    await dav.deleteFile(sessionDir + id + '/' + sessionName);
     res.json({ code: 0 });
   } catch (error) {
     res.status(500).send(error.message || error);

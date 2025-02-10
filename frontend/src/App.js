@@ -31,7 +31,7 @@ const App = () => {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <HashRouter future={{v7_relativeSplatPath: true, v7_startTransition: true}}>
+    <HashRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
       <Suspense
         fallback={
           <div className="pt-3 text-center">
@@ -62,7 +62,7 @@ const App = () => {
                         <AppSidebar />
                         <div className="wrapper d-flex flex-column vh-100">
                           <AppHeader />
-                          <div className="body flex-grow-1 w-100 d-flex flex-column justify-content-center align-items-center p-3" style={{ height: 0 }}>
+                          <div className="body flex-grow-1 w-100 d-flex flex-column justify-content-center align-items-center p-3 overflow-auto">
                             <route.element />
                           </div>
                         </div>

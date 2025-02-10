@@ -283,12 +283,14 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
   const id = req.params.id;
   const sessionName = req.params.sessionName;
   try {
+    const datasetId = ensureVariable("Dataset", req.query.dataset);
     const dav = DAVClient(req.auth.baseUrl, req.auth);
     const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
     const ssh = new SSH2Promise(sshConfig);
-    const response2 = await ssh.exec(`tmux kill-session -t ${sessionName}`);
+    await ssh.exec(`tmux kill-session -t ${sessionName} || true`);
     ssh.close();
-    res.json(response2);
+    await dav.deleteFile(sessionDir + datasetId + '/' + sessionName);
+    res.json({code: 0});
   } catch (error) {
     res.status(500).send(error.message || error);
     console.error('Error for /servers/:id/train/:sessionName for', id, ':', error.message || error);

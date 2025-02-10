@@ -101,18 +101,18 @@ const Overview = () => {
       <NewServerModal modalVisible={newServerModalVisible} setModalVisible={setNewServerModalVisible} />
       <NewDatasetModal modalVisible={newDatasetModalVisible} setModalVisible={setNewDatasetModalVisible} />
 
-      <div className="flex-grow-1 d-flex flex-column w-100" style={{ maxWidth: "900px", height: 0 }}>
+      <div className="w-100 flex-grow-1 d-flex flex-column overflow-auto" style={{ maxWidth: "900px" }}>
 
-        <div className="bg-body rounded-4 p-3">
+        <div className="bg-body rounded-4 p-3" style={{ minWidth: "320px" }}>
           <h2>Status</h2>
           <DavStatus />
           <div>Number of datasets: {datasetList.length}</div>
           <CButton className="mt-3" color="primary" onClick={() => setNewDatasetModalVisible(true)}>Add new dataset</CButton>
         </div>
 
-        <div className="flex-grow-1 d-flex flex-row flex-wrap gap-3 mt-3" style={{ height: 0 }}>
+        <div className="flex-grow-1 d-flex flex-row flex-wrap flex-md-nowrap gap-3 mt-3 overflow-auto">
 
-          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "300px" }}>
+          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px" }}>
             <h2>Servers</h2>
             <CListGroup className="flex-grow-1 overflow-auto">
               {serverList.map(server =>
@@ -128,7 +128,7 @@ const Overview = () => {
               <CButton className="mt-3" color="primary" onClick={() => setNewServerModalVisible(true)}>Add new server</CButton>
             </div>
           </div>
-          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "300px" }}>
+          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "400px" }}>
             <h2>Trainings in progress</h2>
             <div className="flex-grow-1 overflow-auto">
               {Object.values(sessions).length > 0 ?

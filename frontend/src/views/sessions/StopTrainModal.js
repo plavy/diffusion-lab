@@ -13,7 +13,7 @@ const StopTrainModal = ({ modalVisible, setModalVisible, session }) => {
   const stopTraining = async () => {
     setWaitingRespone(true);
     setErrorMessage("");
-    axios.delete(`${getBackendURL()}/servers/${session.sshServer}/train/${session.sessionName}`, {
+    axios.delete(`${getBackendURL()}/servers/${session.sshServer}/train/${session.sessionName}?dataset=${session.dataset}`, {
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -43,7 +43,7 @@ const StopTrainModal = ({ modalVisible, setModalVisible, session }) => {
     </CModalHeader>
     <CModalBody>
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
-      <p>Are you sure you want to stop training {session ? session.sessionName : null}?</p>
+      <p>Are you sure you want to stop and delete training {session ? session.sessionName : null}?</p>
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Cancel</CButton>

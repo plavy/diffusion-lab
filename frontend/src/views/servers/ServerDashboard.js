@@ -154,9 +154,9 @@ const ServerDashboard = () => {
   }
 
   return (
-    <div className="flex-grow-1 d-flex flex-row flex-wrap gap-3 align-items-center justify-items-center" style={{ height: 0 }}>
+    <div className="w-100 flex-grow-1 d-flex flex-row flex-wrap flex-md-nowrap gap-3 justify-content-center align-items-center overflow-auto" style={{ maxWidth: "900px" }}>
 
-      <div className="d-flex flex-column" style={{ flex: 3, minWidth: '300px' }}>
+      <div className="d-flex flex-column overflow-auto" style={{ flex: 3, minWidth: '300px' }}>
 
         <h1>{metadata.name}</h1>
 
@@ -204,7 +204,7 @@ const ServerDashboard = () => {
         </CForm>
 
       </div>
-      <div className="d-flex flex-column" style={{ flex: 2, minWidth: '300px' }}>
+      <div className="d-flex flex-column overflow-auto" style={{ flex: 2, minWidth: '300px' }}>
 
         <h2>Maintenance control</h2>
         <CContainer className="bg-body rounded-4 p-3">

@@ -58,14 +58,14 @@ const DetailsModal = ({ modalVisible, setModalVisible, serverList, downsizingLis
     <CModalHeader>
       <CModalTitle>Details for {session?.sessionName}</CModalTitle>
     </CModalHeader>
-    <CModalBody>
+    <CModalBody className="overflow-y-auto overflow-x-hidden">
       {errorMesage ? <CAlert color="danger" ><CIcon className="me-1" icon={cilWarning} />{errorMesage}</CAlert> : null}
       {watingResponse ? <div className="w-100 d-flex flex-column jutify-items-center align-items-center">
         <CSpinner color="primary" variant="grow" />
       </div>
         : null
       }
-      {metrics ? <div className="d-flex flex-row gap-1 flex-wrap jutify-items-center align-items-center">
+      {metrics ? <div className="d-flex flex-row flex-sm-wrap flex-md-nowrap gap-3 justify-content-center align-items-center">
         <div className="border rounded p-2">
           Downsizing: {findName(downsizingList, session.downsizing)} {findName(shapeList, session.shape)}
           <br />

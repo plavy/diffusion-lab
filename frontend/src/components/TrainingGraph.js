@@ -115,7 +115,7 @@ export const TrainingGraph = ({ epoch, trainLoss, valLoss, clearView, ...props }
             threshold: 10,
           },
           mode: 'x',
-        },
+        }
       }
     },
     scales: {

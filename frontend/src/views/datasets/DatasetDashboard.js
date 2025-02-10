@@ -175,14 +175,12 @@ const DatasetDashboard = () => {
               <>
                 Model: {findName(modelList, session.model)}
                 <br />
-                Hyperparameters: {
-                  JSON.stringify(session.hyperparameters).replaceAll('"', '')
-                }
+                Max steps: {session.hyperparameters['max-steps']}
                 <br />
-                SSH server: {serverList.find(server => server.id == session.sshServer)?.name}
+                SSH server: {findName(serverList, session.sshServer)}
               </>
             )}
-            <div className="d-flex flex-row flex-wrap gap-2">
+            <div className="mt-1 d-flex flex-row flex-wrap gap-2">
 
               {
                 !session.error && session.trainingProgress != "0" ?
@@ -239,14 +237,21 @@ const DatasetDashboard = () => {
 
   return (
     <>
-      <div className="w-100 flex-grow-1 d-flex flex-row gap-3" style={{ height: 0 }}>
+      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} dataset={id} />
+      <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
+      <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
+      <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} session={selectedSession} dataset={id}/>
+      <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} session={selectedSession} />
+      <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={sessions} session={selectedSession} dataset={id} />
 
-        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 3, minWidth: "450px" }}>
+      <div className="w-100 flex-grow-1 d-flex flex-row flex-wrap flex-md-nowrap gap-3 overflow-auto">
+
+        <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 3, minWidth: "320px" }}>
 
           <h2>Dataset {metadata.name}</h2>
           <div>Number of images: {numberImages}</div>
 
-          <CContainer className="flex-grow-1 mt-2 overflow-y-scroll">
+          <CContainer className="flex-grow-1 mt-2 overflow-auto">
             <CRow xs={{ cols: 2 }}>
               <ImagesTrain />
             </CRow>
@@ -265,7 +270,7 @@ const DatasetDashboard = () => {
             </CAccordion>
           </div>
 
-          <div className="d-flex flex-row flex-wrap gap-2 justify-content-center mt-2">
+          <div className="d-flex flex-row flex-wrap gap-2 justify-content-center mt-3">
             <CButton color="primary" size='lg' onClick={() => {
               setStartTrainVisible(true);
             }}>Start new training</CButton>
@@ -275,15 +280,6 @@ const DatasetDashboard = () => {
           </div>
         </div>
       </div>
-
-      <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} dataset={id} />
-      <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
-      <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
-      <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} session={selectedSession} dataset={id}/>
-      <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} session={selectedSession} />
-
-      <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={sessions} session={selectedSession} dataset={id} />
-
     </>
   )
 }
