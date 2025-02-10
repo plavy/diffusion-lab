@@ -57,7 +57,6 @@ const AppHeader = () => {
     <CHeader position="sticky" className="p-0" ref={headerRef}>
       <CContainer className="border-bottom px-4" fluid>
         <div>
-
           <CHeaderToggler
             onClick={() => dispatch({ type: 'set', sidebarShow: !sidebarShow })}
             style={{ marginInlineStart: '-14px' }}
@@ -66,7 +65,7 @@ const AppHeader = () => {
           </CHeaderToggler>
           Diffusion Lab
         </div>
-        <CHeaderNav>
+        <CHeaderNav className="ms-auto">
           <CDropdown variant="nav-item" placement="bottom-end">
             <CDropdownToggle caret={false}>
               {colorMode === 'dark' ? (
