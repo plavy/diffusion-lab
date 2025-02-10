@@ -296,8 +296,8 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     },
     {
       content: (
-        <div className="d-flex flex-column gap-3 align-items-center justify-content-center" >
-          <div className="border rounded p-2 w-100">
+        <div className="w-100 d-flex flex-column gap-3 align-items-center justify-content-center" >
+          <div className="border rounded p-2 w-100" style={{ maxWidth: '400px' }}>
             Downsizing: {findName(downsizingList, formData.downsizing)} {findName(shapeList, formData.shape)}
             <br />
             Augmentations: {Object.entries(formData.augmentations).filter(([key, value]) => value == true).length == 0 ? (<>None</>) :
@@ -305,21 +305,23 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
             }
             <br />
             Validation split proportion: {findName(valProportionList, formData.validationSplitProportion)}
-            <br/>
+            <br />
             Model: {findName(modelList, formData.model)}
             <br />
             Hyperparameters: {Object.keys(formData.hyperparameters).length == 0 ? (<>None</>) :
               Object.entries(formData.hyperparameters).map(([key, value]) => (<span key={key}><br /> - {findName(modelList.find(model => model.id == formData.model)?.hyperparameters, key)}: {value}</span>))
             }
           </div>
-          <CFormInput className="w-100"
-            id="sessionName"
-            type="text"
-            floatingLabel="Session name"
-            value={formData["sessionName"]}
-            onChange={handleChange}
-            style={{ minWidth: '400px' }}
-          />
+          <div className="w-100" style={{ maxWidth: '400px' }}>
+            <CFormInput
+              className="w-100"
+              id="sessionName"
+              type="text"
+              floatingLabel="Session name"
+              value={formData["sessionName"]}
+              onChange={handleChange}
+            />
+          </div>
         </div>
       )
     }
