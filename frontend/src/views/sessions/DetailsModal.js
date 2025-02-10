@@ -65,7 +65,7 @@ const DetailsModal = ({ modalVisible, setModalVisible, serverList, downsizingLis
       </div>
         : null
       }
-      {metrics ? <div className="d-flex flex-row flex-sm-wrap flex-md-nowrap gap-3 justify-content-center align-items-center">
+      {metrics ? <div className="d-flex flex-row flex-wrap flex-lg-nowrap gap-3 justify-content-center align-items-center">
         <div className="border rounded p-2">
           Downsizing: {findName(downsizingList, session.downsizing)} {findName(shapeList, session.shape)}
           <br />
