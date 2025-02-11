@@ -1,4 +1,4 @@
-const logo = [
+export const logo = [
   '600 120',
   `<svg width="590" height="120" viewBox="0 0 590 120" xmlns="http://www.w3.org/2000/svg" fill="none">
     <defs>
@@ -10,5 +10,3 @@ const logo = [
     <text x="0" y="100" font-family="Arial" font-size="100" fill="url(#grad1)">Diffusion Lab</text>
   </svg>`
 ];
-
-export { logo };

@@ -3,6 +3,7 @@ const router = express.Router();
 
 const DAVClient = require('webdav').createClient;
 const pLimit = require('p-limit');
+const concurrencyLimit = pLimit(32);
 
 const SSH2Promise = require('ssh2-promise');
 const SCPClient = require('node-scp').Client;
@@ -177,7 +178,6 @@ router.post('/:id/sync', async (req, res) => {
       console.timeEnd('createDirs');
     }
 
-    const concurrencyLimit = pLimit(32);
     if (files_to_create.length > 0) {
       console.time('createFiles');
       const create_files = files_to_create.map(async file => concurrencyLimit(async () => {
@@ -290,7 +290,7 @@ router.delete('/:id/train/:sessionName', async (req, res) => {
     await ssh.exec(`tmux kill-session -t ${sessionName} || true`);
     ssh.close();
     await dav.deleteFile(sessionDir + datasetId + '/' + sessionName);
-    res.json({code: 0});
+    res.json({ code: 0 });
   } catch (error) {
     res.status(500).send(error.message || error);
     console.error('Error for /servers/:id/train/:sessionName for', id, ':', error.message || error);
@@ -350,6 +350,30 @@ router.post('/:id/generate/:name', async (req, res) => {
     const ssh = new SSH2Promise(sshConfig);
 
     const cwd = `${sessionDir}/${datasetId}/${session}`
+
+    // Copy session if it doesn't exist on server
+    const check = await ssh.exec(`test -d ${cwd} && echo -n "found" || echo -n "notfound"`);
+    if (check == 'notfound') {
+      console.time('syncSession');
+      const scp = await SCPClient(sshConfig);
+      const storage_list = await dav.getDirectoryContents(cwd, { deep: true });
+      const dirs_to_create = storage_list.filter(file => file.type == 'directory').map(file => file.filename.replace(/^\/+/, ''));
+      const files_to_create = storage_list.filter(file => file.type == 'file').map(file => file.filename.replace(/^\/+/, ''));
+      if (dirs_to_create.length > 0) {
+        for (const dir of dirs_to_create) {
+          await ssh.exec(`mkdir -p ${dir}`);
+        }
+      }
+      if (files_to_create.length > 0) {
+        const create_files = files_to_create.map(async file => concurrencyLimit(async () => {
+          const file_content = await dav.getFileContents(file);
+          await scp.writeFile(file, file_content);
+        }));
+        await Promise.all(create_files);
+      }
+      console.timeEnd('syncSession');
+    }
+
     const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
         --save-dir ${samplesDir} \
         --base-name ${baseName} \

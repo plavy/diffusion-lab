@@ -240,7 +240,7 @@ const DatasetDashboard = () => {
       <StartTrainModal modalVisible={startTrainVisible} setModalVisible={setStartTrainVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} dataset={id} />
       <StopTrainModal modalVisible={stopTrainVisible} setModalVisible={setStopTrainVisible} session={selectedSession} />
       <DeleteTrainModal modalVisible={deleteTrainVisible} setModalVisible={setDeleteTrainVisible} session={selectedSession} dataset={id} />
-      <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} session={selectedSession} dataset={id}/>
+      <DetailsModal modalVisible={detailsVisible} setModalVisible={setDetailsVisible} serverList={serverList} downsizingList={downsizingList} augmentationList={augmentationList} modelList={modelList} session={selectedSession} dataset={id} />
       <LogsModal modalVisible={logsVisible} setModalVisible={setLogsVisible} session={selectedSession} />
       <GenerateModal modalVisible={generateVisible} setModalVisible={setGenerateVisible} serverList={serverList} sessions={sessions} session={selectedSession} dataset={id} />
 
@@ -271,12 +271,20 @@ const DatasetDashboard = () => {
           </div>
 
           <div className="d-flex flex-row flex-wrap gap-2 justify-content-center mt-3">
-            <CButton color="primary" size='lg' onClick={() => {
-              setStartTrainVisible(true);
-            }}>Start new training</CButton>
-            <CButton color="primary" size='lg' onClick={() => {
-              setGenerateVisible(true);
-            }}>Generate image</CButton>
+            <CButton
+              size='lg'
+              color="primary"
+              disabled={!sessionsReady}
+              onClick={() => {
+                setStartTrainVisible(true);
+              }}>Start new training</CButton>
+            <CButton
+              size='lg'
+              color="primary"
+              disabled={!sessionsReady}
+              onClick={() => {
+                setGenerateVisible(true);
+              }}>Generate image</CButton>
           </div>
         </div>
       </div>

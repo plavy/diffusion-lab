@@ -29,7 +29,11 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
           newFormData.session = sessions[0].sessionName;
         }
         if (serverList.length > 0) {
-          newFormData.sshServer = serverList[0].id;
+          if (sessions.length > 0) {
+            newFormData.sshServer = sessions[0].sshServer;
+          } else {
+            newFormData.sshServer = serverList[0].id;
+          }
         }
       }
       setFormData(newFormData);
@@ -199,7 +203,12 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
     </CModalBody>
     <CModalFooter>
       <CButton color="secondary" onClick={() => setModalVisible(false)}>Close</CButton>
-      <LoadingButton loadingVisible={watingResponse} color="primary" onClick={handleSubmit}>Generate</LoadingButton>
+      <LoadingButton
+        loadingVisible={watingResponse}
+        color="primary"
+        onClick={handleSubmit}
+        style={{ background: 'linear-gradient(135deg, var(--cui-btn-bg) 40%, orange)' }}
+      >Generate</LoadingButton>
     </CModalFooter>
   </CModal>
 
