@@ -210,7 +210,7 @@ const DatasetDashboard = () => {
                   <CButton type="submit" color="primary" onClick={() => {
                     setSelectedSession(session);
                     setStopTrainVisible(true);
-                  }}>Stop training
+                  }}>Stop
                   </CButton> : null
               }
               {session.error || session.uploadDone ?
