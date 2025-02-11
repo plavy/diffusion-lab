@@ -8,7 +8,7 @@
     "url": "https://github.com/plavy/diffusion-lab"
   },
   "license": "GNU GPL",
-  "author": "The CoreUI Team (https://github.com/orgs/coreui/people)",
+  "author": "Tin Plavec",
   "scripts": {
     "build": "vite build",
     "lint": "eslint \"src/**/*.js\"",

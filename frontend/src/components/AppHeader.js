@@ -63,7 +63,6 @@ const AppHeader = () => {
           >
             <CIcon icon={cilMenu} size="lg" />
           </CHeaderToggler>
-          Diffusion Lab
         </div>
         <CHeaderNav className="ms-auto">
           <CDropdown variant="nav-item" placement="bottom-end">
