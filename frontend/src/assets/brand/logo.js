@@ -1,6 +1,6 @@
 const logo = [
   '600 120',
-  `<svg width="580" height="120" viewBox="0 0 580 120" xmlns="http://www.w3.org/2000/svg" fill="none">
+  `<svg width="590" height="120" viewBox="0 0 590 120" xmlns="http://www.w3.org/2000/svg" fill="none">
     <defs>
       <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
         <stop offset="0%" style="stop-color:darkviolet; stop-opacity:1" />
