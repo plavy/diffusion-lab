@@ -1,3 +1,9 @@
+# Created by Tin Plavec
+# Based on project:
+#   DiffusionFastForward (https://github.com/mikonvergence/DiffusionFastForward)
+#   by Mikolaj Czerkawski
+
+
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
