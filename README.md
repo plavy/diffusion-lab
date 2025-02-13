@@ -1,6 +1,8 @@
 # Diffusion Lab
 
-Diffusion Lab is a distributed system composed of:
+Diffusion Lab is a distributed system for training and examining diffusion models on own datasets, and also for generating images from the trained models.
+
+It is composed of:
 - Central storage server
 - Web app (Backend + Frontend)
 - SSH servers for training
