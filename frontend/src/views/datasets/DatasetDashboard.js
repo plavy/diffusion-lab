@@ -24,6 +24,8 @@ import LogsModal from "../sessions/LogsModal";
 import GenerateModal from "../sessions/GenerateModal";
 import DetailsModal from "../sessions/DetailsModal";
 import ProgressPlaceholder from "../../components/ProgressPlaceholder";
+import { cilCoffee } from "@coreui/icons";
+import CIcon from "@coreui/icons-react";
 
 
 const DatasetDashboard = () => {
@@ -168,8 +170,6 @@ const DatasetDashboard = () => {
       .then(res => { setSessions(res.data); setSessionsReady(true); })
       .catch((error) => {
         if (error.code != 'ERR_CANCELED') {
-          setSessions([]);
-          setSessionsReady(true);
         }
       });
   }
@@ -310,9 +310,16 @@ const DatasetDashboard = () => {
 
           <div className="flex-grow-1 overflow-auto">
             <CAccordion>
-              {sessionsReady ? <AccordionItems /> : <div className="pt-3 text-center">
-                <CSpinner color="primary" variant="grow" />
-              </div>}
+              {sessionsReady ?
+                sessions.length > 0 ?
+                  <AccordionItems />
+                  : <div div className="pt-3 text-center">
+                    <CIcon icon={cilCoffee} size="3xl" />
+                    <div>Waiting to start training</div>
+                  </div>
+                : <div className="pt-3 text-center">
+                  <CSpinner color="primary" variant="grow" />
+                </div>}
             </CAccordion>
           </div>
 

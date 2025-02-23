@@ -2,7 +2,7 @@ import { CBadge, CButton, CListGroup, CListGroupItem, CSpinner } from "@coreui/r
 import NewServerModal from "../servers/NewServerModal"
 import { useEffect, useState } from "react";
 import { getAuthHeader, getBackendURL, getAuth, updateServerList, updateDatasetList, findName } from "../../utils";
-import { cilCheck, cilWarning } from "@coreui/icons";
+import { cilCheck, cilCoffee, cilWarning } from "@coreui/icons";
 import CIcon from "@coreui/icons-react";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -91,6 +91,7 @@ const Overview = () => {
   }
 
   const [sessions, setSessions] = useState({});
+  const [sessionsReady, setSessionsReady] = useState(false);
   const getAllSessions = async () => {
     const controller = new AbortController();
     for (const dataset of datasetList) {
@@ -99,10 +100,14 @@ const Overview = () => {
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
-      }).then((res) => res.data.map(session => setSessions(sessions => ({
-        ...sessions,
-        [`${dataset.id}-${session.sessionName}`]: session,
-      }))))
+      }).then((res) => {
+        res.data.map(session =>
+          setSessions(sessions => ({
+            ...sessions,
+            [`${dataset.id}-${session.sessionName}`]: session,
+          })));
+        setSessionsReady(true);
+      })
         .catch((error) => {
           if (error.code != 'ERR_CANCELED') {
           }
@@ -160,20 +165,26 @@ const Overview = () => {
           <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px" }}>
             <h2>Trainings in progress</h2>
             <div className="flex-grow-1 overflow-auto">
-              {Object.values(sessions).length > 0 ?
-                (
-                  <CListGroup>
-                    {Object.values(sessions).
-                      filter(session => !session.error && !session.uploadDone && session.trainingProgress != "100")
-                      .map(session => (
-                        <CListGroupItem key={session.sessionName} as="a" href={`/#/datasets/${session.dataset}`}>
-                          <h6 className="mb-1">{session.sessionName}
-                            <CBadge className="m-1" color="secondary">{session.trainingProgress}%</CBadge></h6>
-                          <small>{findName(datasetList, session.dataset)}</small>
-                        </CListGroupItem>
-                      ))}
-                  </CListGroup>
-                ) :
+              {sessionsReady ?
+                Object.values(sessions).
+                  filter(session => !session.error && !session.uploadDone && session.trainingProgress != "100").length > 0 ?
+                  (
+                    <CListGroup>
+                      {Object.values(sessions).
+                        filter(session => !session.error && !session.uploadDone && session.trainingProgress != "100")
+                        .map(session => (
+                          <CListGroupItem key={session.sessionName} as="a" href={`/#/datasets/${session.dataset}`}>
+                            <h6 className="mb-1">{session.sessionName}
+                              <CBadge className="m-1" color="secondary">{session.trainingProgress}%</CBadge></h6>
+                            <small>{findName(datasetList, session.dataset)}</small>
+                          </CListGroupItem>
+                        ))}
+                    </CListGroup>
+                  ) : <div div className="pt-3 text-center">
+                    <CIcon icon={cilCoffee} size="3xl" />
+                    <div>Waiting to start training</div>
+                  </div>
+                :
                 (<div className="pt-3 text-center"><CSpinner color="primary" variant="grow" /></div>)}
             </div>
           </div>
