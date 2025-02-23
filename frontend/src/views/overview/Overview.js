@@ -135,7 +135,7 @@ const Overview = () => {
         <div className="bg-body rounded-4 p-3" style={{ minWidth: "320px" }}>
           <h2>Status</h2>
           <DavStatus />
-          <div>Number of datasets: {datasetList.length}</div>
+          <div>Number of datasets: {datasetList.length > 0 ? datasetList.length : null}</div>
           <CButton className="mt-3" color="primary" onClick={() => setNewDatasetModalVisible(true)}>Add new dataset</CButton>
         </div>
 
