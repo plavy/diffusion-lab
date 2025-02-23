@@ -1,4 +1,4 @@
-import { CAlert, CBadge, CButton, CCol, CListGroup, CListGroupItem, CRow, CSpinner } from "@coreui/react"
+import { CBadge, CButton, CListGroup, CListGroupItem, CSpinner } from "@coreui/react"
 import NewServerModal from "../servers/NewServerModal"
 import { useEffect, useState } from "react";
 import { getAuthHeader, getBackendURL, getAuth, updateServerList, updateDatasetList, findName } from "../../utils";
@@ -46,6 +46,7 @@ const Overview = () => {
   )
 
   const autoRefresh = useSelector((state) => state.autoRefresh);
+  const blockAutoRefresh = useSelector((state) => state.blockAutoRefresh);
   const datasetList = useSelector((state) => state.datasetList);
   const serverList = useSelector((state) => state.serverList);
 
@@ -113,13 +114,13 @@ const Overview = () => {
     }
   }
   useEffect(() => {
-    if (autoRefresh) {
+    if (autoRefresh && !blockAutoRefresh) {
       const interval = setInterval(() => {
         getAllSessions();
       }, 4000);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh, datasetList])
+  }, [autoRefresh, blockAutoRefresh, datasetList])
   useEffect(() => {
     getAllSessions();
   }, [datasetList])

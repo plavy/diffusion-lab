@@ -1,6 +1,6 @@
 import { CAlert, CButton, CForm, CFormInput, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react"
 import axios from "axios";
-import { getAuthHeader, getBackendURL, updateServerList } from "../../utils";
+import { getAuthHeader, getBackendURL } from "../../utils";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import LoadingButton from "../../components/LoadingButton";

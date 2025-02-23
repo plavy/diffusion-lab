@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import classNames from 'classnames';
 import axios from "axios";
 import { getAuthHeader, getBackendURL, getLocal, updateServerList } from "../../utils";
 import { CAlert, CButton, CContainer, CForm, CFormInput, CSpinner } from "@coreui/react";
 import CIcon from "@coreui/icons-react";
-import { cilCheck, cilNotes, cilWarning } from "@coreui/icons";
+import { cilCheck, cilWarning } from "@coreui/icons";
 import { useDispatch } from "react-redux";
 import LoadingButton from "../../components/LoadingButton";
 
@@ -233,7 +232,7 @@ const ServerDashboard = () => {
           </LoadingButton>
         </CContainer>
         <CContainer className="bg-body rounded-4 p-3 mt-3">
-          <div>Clearing cache will remove datasets, trained models, and generated images from the SSH server. Storage server is not be affected.</div>
+          <div>Clearing cache will remove datasets, trained models, and generated images from the SSH server. Storage server is not affected.</div>
           <CButton className="mt-2" type="submit" color="primary" disabled={clearingCacheVisible} onClick={() => clearCache()}>
             <CSpinner size="sm" className="me-1" hidden={!clearingCacheVisible} />
             <CIcon icon={cilCheck} className="me-1" hidden={!clearingCacheSuccessVisible} />
@@ -241,7 +240,7 @@ const ServerDashboard = () => {
           </CButton>
         </CContainer>
         <CContainer className="bg-body rounded-4 p-3 mt-3">
-          <div>Uninstalling will remove all Diffusion Lab files from the SSH server. The SSH server will also be removed from the dashboard. Storage server is not be affected.</div>
+          <div>Uninstalling will remove all Diffusion Lab files from the SSH server. The SSH server will also be removed from the dashboard. Storage server is not affected.</div>
           <LoadingButton className="mt-2" loadingVisible={removeLoading} type="submit" color="primary" onClick={() => removeServer()}>
             Uninstall environment
           </LoadingButton>

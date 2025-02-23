@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useDispatch } from "react-redux";
 import { getAuthHeader, getBackendURL } from "../../utils";
 import { CAlert, CButton, CCol, CForm, CFormInput, CFormSelect, CImage, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CRow } from "@coreui/react";
 import { cilWarning } from "@coreui/icons";
@@ -8,6 +9,7 @@ import axios from "axios";
 import ProgressPlaceholder from "../../components/ProgressPlaceholder";
 
 const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, sessions, dataset }) => {
+  const dispatch = useDispatch();
   const [watingResponse, setWaitingRespone] = useState(false);
   const [errorMesage, setErrorMessage] = useState("");
   const controller = useRef(new AbortController());
@@ -52,6 +54,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
       });
       clearInterval(progressInterval.current);
       clearInterval(progressUpdateInterval.current);
+      dispatch({ type: 'set', blockAutoRefresh: false });
     }
   }, [modalVisible]);
 
@@ -73,6 +76,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
   const handleSubmit = async (e) => {
     const timestamp = Date.now();
 
+    dispatch({ type: 'set', blockAutoRefresh: true });
     setWaitingRespone(true);
     setErrorMessage("");
     setFormVisible(false);
@@ -131,6 +135,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
                 prev[i] = URL.createObjectURL(res.data);
                 return [...prev];
               });
+              dispatch({ type: 'set', blockAutoRefresh: false });
             })
             .catch(error => {
               if (error.code != 'ERR_CANCELED') {

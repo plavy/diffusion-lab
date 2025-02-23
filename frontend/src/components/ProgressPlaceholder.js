@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 
 const ProgressPlaceholder = ({progress, color_left='var(--cui-primary)', color_right='orange'}) => {
   const position = 100 - progress;

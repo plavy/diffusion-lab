@@ -23,6 +23,7 @@ import NewDatasetModal from "../views/datasets/NewDatasetModal";
 const AppSidebar = () => {
   const dispatch = useDispatch();
   const autoRefresh = useSelector((state) => state.autoRefresh);
+  const blockAutoRefresh = useSelector((state) => state.blockAutoRefresh);
   const datasetList = useSelector((state) => state.datasetList);
   const serverList = useSelector((state) => state.serverList);
   useEffect(() => {
@@ -31,14 +32,14 @@ const AppSidebar = () => {
   }, []);
 
   useEffect(() => {
-    if (autoRefresh) {
+    if (autoRefresh && !blockAutoRefresh) {
       const interval = setInterval(() => {
         updateDatasetList(dispatch);
         updateServerList(dispatch);
       }, 10000);
       return () => clearInterval(interval);
     }
-  }, [autoRefresh])
+  }, [autoRefresh, blockAutoRefresh])
 
   const [newDatasetModalVisible, setNewDatasetModalVisible] = useState(false);
   const [files, setFiles] = useState([]);

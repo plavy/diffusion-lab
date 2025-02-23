@@ -149,7 +149,7 @@ router.post('/:id/sync', async (req, res) => {
     const dirs_to_create = storage_dirs.filter(el => !server_dirs.includes(el));
     const files_to_create = storage_files.filter(el => !server_files.includes(el));
 
-    console.time('syncDatasets');
+    console.time(`syncDatasets to ${id}`);
     if (files_to_delete.length > 0) {
       // Slice large array to avoid bash command too long
       const chunk_size = 100
@@ -187,7 +187,7 @@ router.post('/:id/sync', async (req, res) => {
       await Promise.all(create_files);
       console.timeEnd('createFiles');
     }
-    console.timeEnd('syncDatasets');
+    console.timeEnd(`syncDatasets to ${id}`);
 
     // Scripts
     const scripts_list = await dav.getDirectoryContents(scriptsDir, { deep: true });
@@ -197,13 +197,13 @@ router.post('/:id/sync', async (req, res) => {
     await ssh.exec(`if [[ -d ${scriptsDir} ]]; then find ${scriptsDir} -mindepth 1 -maxdepth 1 ! -name 'venv' -exec rm -r {} +; fi`);
     await ssh.exec(`mkdir -p ${dirs.map(dir => `"${dir}"`).join(' ')}`);
     // Create scripts files
-    console.time('syncScripts');
+    console.time(`syncScripts to ${id}`);
     const create_scripts_files = files.map(async file => concurrencyLimit(async () => {
       const file_content = await dav.getFileContents(file);
       await scp.writeFile(file, file_content);
     }));
     await Promise.all(create_scripts_files);
-    console.timeEnd('syncScripts');
+    console.timeEnd(`syncScripts to ${id}`);
 
     scp.close();
 
@@ -227,6 +227,7 @@ router.delete('/:id/cache', async (req, res) => {
     const ssh = new SSH2Promise(sshConfig);
     // Remove directories
     await ssh.exec(`if [[ -d ${samplesDir} ]]; then rm -r ${samplesDir}; fi`);
+    await ssh.exec(`if [[ -d ${sessionDir} ]]; then rm -r ${sessionDir}; fi`);
     res.json({ code: 0 });
     ssh.close();
   } catch (error) {
@@ -354,7 +355,7 @@ router.post('/:id/generate/:name', async (req, res) => {
     // Copy session if it doesn't exist on server
     const check = await ssh.exec(`test -d ${cwd} && echo -n "found" || echo -n "notfound"`);
     if (check == 'notfound') {
-      console.time('syncSession');
+      console.time(`syncSession ${sessionDir} to ${id}`);
       const scp = await SCPClient(sshConfig);
       const storage_list = await dav.getDirectoryContents(cwd, { deep: true });
       const dirs_to_create = storage_list.filter(file => file.type == 'directory').map(file => file.filename.replace(/^\/+/, ''));
@@ -371,7 +372,7 @@ router.post('/:id/generate/:name', async (req, res) => {
         }));
         await Promise.all(create_files);
       }
-      console.timeEnd('syncSession');
+      console.timeEnd(`syncSession ${sessionDir} to ${id}`);
     }
 
     const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \

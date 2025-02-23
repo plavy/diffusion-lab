@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import classNames from 'classnames';
 import axios from "axios";
 import { findName, getAuthHeader, getBackendURL, getLocal, updateAugmentationList, updateDatasetList, updateDownsizingList, updateModelList, updateServerList } from "../../utils";
 import { useSelector, useDispatch } from 'react-redux';
@@ -52,6 +51,7 @@ const DatasetDashboard = () => {
   const [imageSrcs, setImageSrcs] = useState({});
 
   const autoRefresh = useSelector((state) => state.autoRefresh);
+  const blockAutoRefresh = useSelector((state) => state.blockAutoRefresh);
   const serverList = useSelector((state) => state.serverList);
   const downsizingList = useSelector((state) => state.downsizingList);
   const augmentationList = useSelector((state) => state.augmentationList);
@@ -111,7 +111,6 @@ const DatasetDashboard = () => {
   // Dataset images
   useEffect(() => {
     const controller = new AbortController();
-    console.log(numberImagesShown)
     axios.get(`${getBackendURL()}/datasets/${id}/images`, {
       signal: controller.signal,
       headers: {
@@ -179,7 +178,7 @@ const DatasetDashboard = () => {
   useEffect(() => {
     const controller = new AbortController();
 
-    if (autoRefresh) {
+    if (autoRefresh && !blockAutoRefresh) {
       const interval = setInterval(() => {
         getSessions(controller);
       }, 4000);
@@ -188,7 +187,7 @@ const DatasetDashboard = () => {
         controller.abort();
       };
     }
-  }, [autoRefresh, id])
+  }, [autoRefresh, blockAutoRefresh, id])
   useEffect(() => {
     const controller = new AbortController();
     getSessions(controller);

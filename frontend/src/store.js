@@ -4,6 +4,7 @@ const initialState = {
   sidebarShow: true,
   theme: 'light',
   autoRefresh: false,
+  blockAutoRefresh: false,
   serverList: [],
   datasetList: [],
   downsizingList: [],

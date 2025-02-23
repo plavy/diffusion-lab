@@ -1,4 +1,4 @@
-import { CAlert, CButton, CFormCheck, CFormSwitch, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
+import { CAlert, CButton, CFormSwitch, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
 import { findName, getAuthHeader, getBackendURL, shapeList, valProportionList } from "../../utils";
 import { useEffect, useState } from "react";
 import axios from "axios";
