@@ -21,16 +21,23 @@ const ServerDashboard = () => {
 
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
-    const getMetadata = () => {
+    const getMetadata = (controller) => {
       axios.get(`${getBackendURL()}/servers/` + id, {
+        signal: controller.signal,
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
       })
-      .then((res) => { setMetadata(res.data); setSiteReady(true) })
-      .catch((_) => navigate('/404'));
+        .then((res) => { setMetadata(res.data); setSiteReady(true) })
+        .catch((error) => {
+          if (error.code != 'ERR_CANCELED') {
+            navigate('/404')
+          }
+        }
+        );
     }
 
+    const controller = new AbortController();
     try {
       const filtered = getLocal('servers').filter(server => server.id == id);
       if (filtered.length == 1) {
@@ -38,12 +45,15 @@ const ServerDashboard = () => {
         setUpdateLoading(false);
         setSyncingLoading(false);
         setSiteReady(true);
-        getMetadata();
+        getMetadata(controller);
       } else {
         throw new Error();
       }
     } catch {
-      getMetadata();
+      getMetadata(controller);
+    }
+    return () => {
+      controller.abort();
     }
   }, [id]);
 
@@ -51,12 +61,21 @@ const ServerDashboard = () => {
   useEffect(() => {
     updateServerList(dispatch);
     setStatus("");
+    const controller = new AbortController();
     axios.get(`${getBackendURL()}/servers/${id}/status`, {
+      signal: controller.signal,
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     }).then((res) => setStatus(res.data))
-      .catch((error) => setStatus(error.response.data))
+      .catch((error) => {
+        if (error.code != 'ERR_CANCELED') {
+          setStatus(error.response.data)
+        }
+      });
+    return () => {
+      controller.abort();
+    }
   }, [id]);
 
 
@@ -67,10 +86,10 @@ const ServerDashboard = () => {
           <CIcon icon={cilCheck} /> {status.message}
         </CAlert> :
         <CAlert id="statusFail" color="danger">
-          <CIcon icon={cilWarning} /> {status.message}. 
+          <CIcon icon={cilWarning} /> {status.message}.
           Make sure that the public key of Diffusion Lab is added to SSH known hosts:
           <div className="bg-body-secondary rounded p-2 text-body">
-            <div>{status.publicKey}</div>
+            <div className="text-break">{status.publicKey}</div>
           </div>
         </CAlert>
       ) :

@@ -15,15 +15,20 @@ const Overview = () => {
   const [newDatasetModalVisible, setNewDatasetModalVisible] = useState(false);
 
   const [davStatus, setDavStatus] = useState(null);
-  const updateDavStatus = () => {
+  const updateDavStatus = (controller) => {
     setDavStatus(null);
     axios.get(`${getBackendURL()}/models`, {
+      signal: controller.signal,
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
       .then((_) => setDavStatus(0))
-      .catch((_) => setDavStatus(1));
+      .catch((error) => {
+        if (error.code != 'ERR_CANCELED') {
+          setDavStatus(1);
+        }
+      });
   }
 
   const domain = getAuth().url;
@@ -45,20 +50,33 @@ const Overview = () => {
   const serverList = useSelector((state) => state.serverList);
 
   useEffect(() => {
-    updateDavStatus();
+    const controller = new AbortController();
+    updateDavStatus(controller);
     updateDatasetList(dispatch);
     updateServerList(dispatch);
+    return () => {
+      controller.abort();
+    }
   }, []);
 
   const [serverStatus, setServerStatus] = useState({});
   useEffect(() => {
+    const controller = new AbortController();
     for (const server of serverList) {
       axios.get(`${getBackendURL()}/servers/${server.id}/status`, {
+        signal: controller.signal,
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
       }).then((res) => setServerStatus(prev => ({ ...prev, [server.id]: res.data })))
-        .catch((error) => setServerStatus(prev => ({ ...prev, [server.id]: error.response.data })));
+        .catch((error) => {
+          if (error.code != 'ERR_CANCELED') {
+            setServerStatus(prev => ({ ...prev, [server.id]: error.response.data }))
+          }
+        });
+    }
+    return () => {
+      controller.abort();
     }
   }, [serverList]);
 
@@ -73,15 +91,25 @@ const Overview = () => {
 
   const [sessions, setSessions] = useState({});
   const getAllSessions = async () => {
+    const controller = new AbortController();
     for (const dataset of datasetList) {
       axios.get(`${getBackendURL()}/datasets/${dataset.id}/sessions`, {
+        signal: controller.signal,
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
       }).then((res) => res.data.map(session => setSessions(sessions => ({
         ...sessions,
         [`${dataset.id}-${session.sessionName}`]: session,
-      }))));
+      }))))
+        .catch((error) => {
+          if (error.code != 'ERR_CANCELED') {
+          }
+        }
+        );
+    }
+    return () => {
+      controller.abort();
     }
   }
   useEffect(() => {
@@ -112,7 +140,7 @@ const Overview = () => {
 
         <div className="flex-grow-1 d-flex flex-row flex-wrap flex-md-nowrap gap-3 mt-3 overflow-auto">
 
-          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px"}}>
+          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px" }}>
             <h2>Servers</h2>
             <CListGroup className="flex-grow-1 overflow-auto">
               {serverList.map(server =>
@@ -128,7 +156,7 @@ const Overview = () => {
               <CButton className="mt-3" color="primary" onClick={() => setNewServerModalVisible(true)}>Add new server</CButton>
             </div>
           </div>
-          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px"}}>
+          <div className="d-flex flex-column bg-body rounded-4 p-3" style={{ flex: 1, minWidth: "320px" }}>
             <h2>Trainings in progress</h2>
             <div className="flex-grow-1 overflow-auto">
               {Object.values(sessions).length > 0 ?

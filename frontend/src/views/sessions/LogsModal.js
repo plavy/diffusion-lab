@@ -38,6 +38,7 @@ const LogsModal = ({ modalVisible, setModalVisible, session }) => {
   return <CModal
     scrollable
     visible={modalVisible}
+    aria-hidden={false}
     onClose={() => setModalVisible(false)}
     size="lg"
   >

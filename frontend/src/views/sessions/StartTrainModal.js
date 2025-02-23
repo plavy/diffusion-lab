@@ -330,6 +330,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
   return <CModal
     scrollable
     visible={modalVisible}
+    aria-hidden={false}
     onClose={() => setModalVisible(false)}
     size="lg"
   >

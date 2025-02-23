@@ -85,6 +85,7 @@ const NewDatasetModal = ({ modalVisible, setModalVisible, inputFiles, setInputFi
     <CModal
       scrollable
       visible={modalVisible}
+      aria-hidden={false}
       onClose={() => setModalVisible(false)}
     >
       <CModalHeader>

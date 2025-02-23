@@ -52,6 +52,7 @@ const DetailsModal = ({ modalVisible, setModalVisible, serverList, downsizingLis
   return <CModal
     scrollable
     visible={modalVisible}
+    aria-hidden={false}
     onClose={() => setModalVisible(false)}
     size="xl"
   >

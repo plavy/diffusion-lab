@@ -34,6 +34,7 @@ const DeleteTrainModal = ({ modalVisible, setModalVisible, session, dataset }) =
   return <CModal
     scrollable
     visible={modalVisible}
+    aria-hidden={false}
     onClose={() => setModalVisible(false)}
   >
     <CModalHeader>

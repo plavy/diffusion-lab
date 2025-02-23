@@ -10,6 +10,7 @@ import ProgressPlaceholder from "../../components/ProgressPlaceholder";
 const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, sessions, dataset }) => {
   const [watingResponse, setWaitingRespone] = useState(false);
   const [errorMesage, setErrorMessage] = useState("");
+  const controller = useRef(new AbortController());
 
   const [formData, setFormData] = useState({
     "session": "",
@@ -20,6 +21,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
 
   useEffect(() => {
     if (modalVisible) {
+      controller.current = new AbortController();
       const newFormData = { ...formData };
       if (session) {
         newFormData.session = session.sessionName;
@@ -40,6 +42,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
       setImageSrcList([]);
       setFormVisible(true);
     } else {
+      controller.current.abort();
       setWaitingRespone(false);
       setErrorMessage("");
       setFormData({
@@ -85,22 +88,29 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
     }, 2000);
     progressInterval.current = setInterval(() => {
       axios.get(`${getBackendURL()}/servers/${formData.sshServer}/generate/${timestamp}/progress`, {
+        signal: controller.current.signal,
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         },
-      }).then(res => {
-        const progress = Number(res.data)
-        latestProgress.current = progress;
-        if (progress == 100) {
-          clearInterval(progressInterval.current);
-        }
       })
+        .then(res => {
+          const progress = Number(res.data)
+          latestProgress.current = progress;
+          if (progress == 100) {
+            clearInterval(progressInterval.current);
+          }
+        })
+        .catch((error) => {
+          if (error.code != 'ERR_CANCELED') {
+          }
+        })
     }, 2000);
 
     setImageSrcList(new Array(Number(formData.numberImages)).fill(null));
     const body = { ...formData };
     body['datasetId'] = dataset;
     axios.post(`${getBackendURL()}/servers/${formData.sshServer}/generate/${timestamp}`, body, {
+      signal: controller.current.signal,
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       },
@@ -108,6 +118,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
       .then(res => {
         for (let i = 0; i < formData.numberImages; i++) {
           axios.get(`${getBackendURL()}/servers/${formData.sshServer}/generate/${timestamp}/image/${i}`, {
+            signal: controller.current.signal,
             headers: {
               Authorization: getAuthHeader() // Encrypted by TLS
             },
@@ -122,22 +133,26 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
               });
             })
             .catch(error => {
-              setErrorMessage(String(error.response.data));
-              setWaitingRespone(false);
-              setFormVisible(true);
-              setImageSrcList([]);
-              clearInterval(progressInterval.current);
-              clearInterval(progressUpdateInterval.current);
+              if (error.code != 'ERR_CANCELED') {
+                setErrorMessage(String(error.response.data));
+                setWaitingRespone(false);
+                setFormVisible(true);
+                setImageSrcList([]);
+                clearInterval(progressInterval.current);
+                clearInterval(progressUpdateInterval.current);
+              }
             })
         }
       })
       .catch(error => {
-        setErrorMessage(error.response.data);
-        setWaitingRespone(false);
-        setFormVisible(true);
-        setImageSrcList([]);
-        clearInterval(progressInterval.current);
-        clearInterval(progressUpdateInterval.current);
+        if (error.code != 'ERR_CANCELED') {
+          setErrorMessage(error.response.data);
+          setWaitingRespone(false);
+          setFormVisible(true);
+          setImageSrcList([]);
+          clearInterval(progressInterval.current);
+          clearInterval(progressUpdateInterval.current);
+        }
       });
   }
 
@@ -158,6 +173,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
   return <CModal
     scrollable
     visible={modalVisible}
+    aria-hidden={false}
     onClose={() => setModalVisible(false)}
     size="lg"
   >

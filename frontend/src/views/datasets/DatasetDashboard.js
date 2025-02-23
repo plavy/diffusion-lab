@@ -72,34 +72,45 @@ const DatasetDashboard = () => {
   const navigate = useNavigate();
   const [metadata, setMetadata] = useState("");
   useEffect(() => {
-    const getMetadata = () => {
+    const getMetadata = (controller) => {
       axios.get(`${getBackendURL()}/datasets/${id}`, {
+        signal: controller.signal,
         headers: {
           Authorization: getAuthHeader() // Encrypted by TLS
         }
       })
         .then((res) => { setMetadata(res.data); setSiteReady(true); })
-        .catch((_) => navigate('/404'));
+        .catch((error) => {
+          if (error.code != 'ERR_CANCELED') {
+            navigate('/404');
+          }
+        });
     }
 
+    const controller = new AbortController();
     try {
       const filtered = getLocal('datasets').filter(dataset => dataset.id == id);
       if (filtered.length == 1) {
         setMetadata(filtered[0]);
         setSiteReady(true);
-        getMetadata();
+        getMetadata(controller);
       } else {
         throw new Error();
       }
     } catch {
-      getMetadata();
+      getMetadata(controller);
+    }
+    return () => {
+      controller.abort();
     }
   }, [id]);
 
   // Dataset images
   useEffect(() => {
+    const controller = new AbortController();
     setImageSrcList([]);
     axios.get(`${getBackendURL()}/datasets/${id}/images`, {
+      signal: controller.signal,
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
@@ -109,15 +120,31 @@ const DatasetDashboard = () => {
         setNumberImages(images.length);
         for (let i = 0; i < 10; i++) {
           axios.get(`${getBackendURL()}/datasets/${id}/images/${images[i]}`, {
+            signal: controller.signal,
             headers: {
               Authorization: getAuthHeader() // Encrypted by TLS
             },
             responseType: 'blob', // Fetch as binary
           })
-            .then(res => setImageSrcList(imageSrcList => [...imageSrcList, URL.createObjectURL(res.data)]))
-          // .catch 
+            .then(res => setImageSrcList(imageSrcList => [
+              ...imageSrcList.slice(0, i),
+              URL.createObjectURL(res.data),
+              ...imageSrcList.slice(i)
+            ]))
+            .catch((error) => {
+              if (error.code != 'ERR_CANCELED') {
+              }
+            });
         }
       })
+      .catch((error) => {
+        if (error.code != 'ERR_CANCELED') {
+        }
+      }
+      );
+    return () => {
+      controller.abort();
+    }
   }, [id]);
 
   const ImagesTrain = () => {
@@ -133,27 +160,42 @@ const DatasetDashboard = () => {
   }
 
   // Traning sessions
-  const getSessions = () => {
+  const getSessions = (controller) => {
     axios.get(`${getBackendURL()}/datasets/${id}/sessions`, {
+      signal: controller.signal,
       headers: {
         Authorization: getAuthHeader() // Encrypted by TLS
       }
     })
       .then(res => { setSessions(res.data); setSessionsReady(true); })
-      .catch((e) => { setSessions([]); setSessionsReady(true); })
+      .catch((error) => {
+        if (error.code != 'ERR_CANCELED') {
+          setSessions([]);
+          setSessionsReady(true);
+        }
+      });
   }
 
   // Get traning sessions
   useEffect(() => {
+    const controller = new AbortController();
+
     if (autoRefresh) {
       const interval = setInterval(() => {
-        getSessions();
+        getSessions(controller);
       }, 4000);
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        controller.abort();
+      };
     }
   }, [autoRefresh, id])
   useEffect(() => {
-    getSessions();
+    const controller = new AbortController();
+    getSessions(controller);
+    return () => {
+      controller.abort();
+    }
   }, [id, startTrainVisible, stopTrainVisible, deleteTrainVisible, logsVisible, detailsVisible, generateVisible, activeAccordionItem]);
 
   const AccordionItems = () => {

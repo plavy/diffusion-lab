@@ -55,6 +55,7 @@ const NewServerModal = ({ modalVisible, setModalVisible }) => {
     <CModal
       scrollable
       visible={modalVisible}
+      aria-hidden={false}
       onClose={() => setModalVisible(false)}
     >
       <CModalHeader>
