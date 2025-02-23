@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   CContainer,
@@ -10,8 +9,6 @@ import {
   CHeader,
   CHeaderNav,
   CHeaderToggler,
-  CNavLink,
-  CNavItem,
   useColorModes,
   CFormCheck,
 } from '@coreui/react'
@@ -22,8 +19,6 @@ import {
   cilMenu,
   cilMoon,
   cilSun,
-  cilUser,
-  cilSettings
 } from '@coreui/icons'
 
 import { AppBreadcrumb } from './index'
@@ -126,9 +121,6 @@ const AppHeader = () => {
           </CDropdown>
         </CHeaderNav>
       </CContainer>
-      {/* <CContainer className="px-4" fluid>
-        <AppBreadcrumb />
-      </CContainer> */}
     </CHeader>
   )
 }
