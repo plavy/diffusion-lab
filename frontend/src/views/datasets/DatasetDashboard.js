@@ -48,7 +48,8 @@ const DatasetDashboard = () => {
   const [activeAccordionItem, setActiveAccordionItem] = useState(null);
 
   const [numberImages, setNumberImages] = useState(null);
-  const [imageSrcList, setImageSrcList] = useState([]);
+  const [numberImagesShown, setNumberImagesShown] = useState(10);
+  const [imageSrcs, setImageSrcs] = useState({});
 
   const autoRefresh = useSelector((state) => state.autoRefresh);
   const serverList = useSelector((state) => state.serverList);
@@ -65,7 +66,9 @@ const DatasetDashboard = () => {
     setSiteReady(false);
     setSessionsReady(false);
     setSelectedSession(null);
+    setImageSrcs({});
     setNumberImages(null);
+    setNumberImagesShown(10);
   }, [id]);
 
   // Metadata
@@ -108,7 +111,7 @@ const DatasetDashboard = () => {
   // Dataset images
   useEffect(() => {
     const controller = new AbortController();
-    setImageSrcList([]);
+    console.log(numberImagesShown)
     axios.get(`${getBackendURL()}/datasets/${id}/images`, {
       signal: controller.signal,
       headers: {
@@ -118,7 +121,7 @@ const DatasetDashboard = () => {
       .then(res => {
         const images = res.data;
         setNumberImages(images.length);
-        for (let i = 0; i < 10; i++) {
+        for (let i = 0; i < numberImagesShown; i++) {
           axios.get(`${getBackendURL()}/datasets/${id}/images/${images[i]}`, {
             signal: controller.signal,
             headers: {
@@ -126,11 +129,7 @@ const DatasetDashboard = () => {
             },
             responseType: 'blob', // Fetch as binary
           })
-            .then(res => setImageSrcList(imageSrcList => [
-              ...imageSrcList.slice(0, i),
-              URL.createObjectURL(res.data),
-              ...imageSrcList.slice(i)
-            ]))
+            .then(res => setImageSrcs(imageSrcs => ({ ...imageSrcs, [i]: URL.createObjectURL(res.data) })))
             .catch((error) => {
               if (error.code != 'ERR_CANCELED') {
               }
@@ -145,13 +144,13 @@ const DatasetDashboard = () => {
     return () => {
       controller.abort();
     }
-  }, [id]);
+  }, [id, numberImagesShown]);
 
   const ImagesTrain = () => {
     let images = []
-    for (let i = 0; i < 10; i++) {
-      if (imageSrcList[i]) {
-        images.push(<CCol className="p-1" key={i}><CImage fluid src={imageSrcList[i]} /></CCol>)
+    for (let i = 0; i < numberImagesShown; i++) {
+      if (imageSrcs[i]) {
+        images.push(<CCol className="p-1" key={i}><CImage fluid src={imageSrcs[i]} /></CCol>)
       } else {
         images.push(<CCol className="p-1" key={i}><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
       }
@@ -297,7 +296,13 @@ const DatasetDashboard = () => {
             <CRow xs={{ cols: 2 }}>
               <ImagesTrain />
             </CRow>
-            <CButton type="submit" className="my-2 text-secondary">Load more images</CButton>
+            <CButton type="submit" className="my-2 text-secondary" onClick={() => {
+              if (numberImages != null) {
+                const newNumber = Math.min(numberImagesShown + 10, numberImages);
+                setNumberImagesShown(newNumber);
+              }
+            }}
+            >Load more images</CButton>
           </CContainer>
         </div>
 
