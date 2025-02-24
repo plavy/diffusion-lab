@@ -1,6 +1,7 @@
 import os
 import argparse
 import traceback
+import time
 
 from webdav3.client import Client
 import torch
@@ -66,8 +67,14 @@ def train(args):
         print('Uploading model to WebDAV server')
         for filename in os.listdir(args.training_dir):
             file_path = os.path.join(args.training_dir, filename)
-            dav.upload_sync(local_path=file_path, remote_path=file_path)
-        
+            try:
+                dav.upload_sync(local_path=file_path, remote_path=file_path)
+            except:
+                # Try again in case of error
+                time.sleep(4)
+                dav.upload_sync(local_path=file_path, remote_path=file_path)
+                time.sleep(2)
+
         # Mark training as done
         set_metadata(args.metadata_file, "uploadDone", True)
         dav.upload_sync(local_path=args.metadata_file, remote_path=args.metadata_file)

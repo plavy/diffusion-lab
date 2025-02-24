@@ -122,7 +122,7 @@ const Overview = () => {
     if (autoRefresh && !blockAutoRefresh) {
       const interval = setInterval(() => {
         getAllSessions();
-      }, 4000);
+      }, 6000);
       return () => clearInterval(interval);
     }
   }, [autoRefresh, blockAutoRefresh, datasetList])

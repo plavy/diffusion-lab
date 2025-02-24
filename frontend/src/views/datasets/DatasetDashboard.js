@@ -181,7 +181,7 @@ const DatasetDashboard = () => {
     if (autoRefresh && !blockAutoRefresh) {
       const interval = setInterval(() => {
         getSessions(controller);
-      }, 4000);
+      }, 6000);
       return () => {
         clearInterval(interval);
         controller.abort();
