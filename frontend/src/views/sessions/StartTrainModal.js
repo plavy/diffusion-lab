@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { findName, getAuthHeader, getBackendURL, getDateTime, getLocal, shapeList, storeLocal, valProportionList } from "../../utils";
-import { CAlert, CButton, CFormInput, CFormLabel, CFormSwitch, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CSpinner } from "@coreui/react";
+import { CAlert, CButton, CCol, CFormInput, CFormLabel, CFormSwitch, CImage, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CRow, CSpinner } from "@coreui/react";
 import { cilCheck, cilWarning } from "@coreui/icons";
 import LoadingButton from "../../components/LoadingButton";
 import axios from "axios";
 import CIcon from "@coreui/icons-react";
 import LabelImage from "../../components/LabelImage";
 import TranparentButton from "../../components/TransparentButton";
+import ProgressPlaceholder from "../../components/ProgressPlaceholder";
 
 const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizingList, augmentationList, modelList, dataset }) => {
   const [currentPage, setCurrentPage] = useState(0);
@@ -23,6 +24,8 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     "sessionName": "",
     "sshServer": "",
   });
+  const [imageSrcs, setImageSrcs] = useState({});
+  const numberPreviewImages = 4;
 
   useEffect(() => {
     if (modalVisible) {
@@ -60,6 +63,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
       setCurrentPage(0);
       setServerStatus(null);
       setServerStatusMessage(null);
+      setImageSrcs({});
     }
   }, [modalVisible]);
 
@@ -102,7 +106,6 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
   };
 
   const handleAugmentationChange = (e) => {
-    console.log(formData.augmentations)
     setFormData({
       ...formData,
       augmentations: {
@@ -162,6 +165,36 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
         ...formData,
         sessionName: `model-${getDateTime()}`
       });
+      const timestamp = Date.now();
+      axios.post(`${getBackendURL()}/servers/${formData.sshServer}/preview/${timestamp}`, formData, {
+        // signal: controller.current.signal,
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        }
+      }).then(_ => {
+        for (let i = 0; i < numberPreviewImages; i++) {
+          axios.get(`${getBackendURL()}/servers/${formData.sshServer}/preview/${timestamp}/image/${i}`, {
+            // signal: controller.current.signal,
+            headers: {
+              Authorization: getAuthHeader() // Encrypted by TLS
+            },
+            responseType: 'blob', // Fetch as binary
+          })
+            .then(res => {
+              setImageSrcs(imageSrcs => ({ ...imageSrcs, [i]: URL.createObjectURL(res.data) }))
+            })
+            .catch(error => {
+              if (error.code != 'ERR_CANCELED') {
+              }
+            });
+
+        }
+      })
+        .catch((error) => {
+          if (error.code != 'ERR_CANCELED') {
+          }
+        }
+        );
     }
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
@@ -174,7 +207,17 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     }
   };
 
-
+  const ImagesPreview = () => {
+    let images = []
+    for (let i = 0; i < numberPreviewImages; i++) {
+      if (imageSrcs[i]) {
+        images.push(<CCol className="p-1" key={i}><CImage fluid src={imageSrcs[i]} /></CCol>)
+      } else {
+        images.push(<CCol className="p-1" key={i}><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
+      }
+    }
+    return images;
+  }
 
   const pages = [
     {
@@ -311,6 +354,11 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
             Hyperparameters: {Object.keys(formData.hyperparameters).length == 0 ? (<>None</>) :
               Object.entries(formData.hyperparameters).map(([key, value]) => (<span key={key}><br /> - {findName(modelList.find(model => model.id == formData.model)?.hyperparameters, key)}: {value}</span>))
             }
+          </div>
+          <div>
+            <CRow xs={{ cols: 4 }}>
+              <ImagesPreview />
+            </CRow>
           </div>
           <div className="w-100" style={{ maxWidth: '400px' }}>
             <CFormInput

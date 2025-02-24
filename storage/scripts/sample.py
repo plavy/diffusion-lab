@@ -15,8 +15,6 @@ def sample(args):
 
     os.makedirs(args.save_dir, exist_ok=True)
 
-    batch_size = int(args.number)
-
     def on_progress_change(i, n):
         progress_file = os.path.join(args.save_dir, f'{args.base_name}-progress.txt')
         with open(progress_file, 'w') as f:
@@ -25,6 +23,7 @@ def sample(args):
     model_class = load_model(get_metadata(args.metadata_file).get('model')).get_class()
     model = model_class.load_from_checkpoint(checkpoint_path=trained_model_path)
     
+    batch_size = int(args.number)
     model.cuda()
     out=model(batch_size=batch_size, shape=model.hparams.sample_shape, verbose=False, progress_callback=on_progress_change)
 

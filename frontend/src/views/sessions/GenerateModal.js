@@ -20,6 +20,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
     "sshServer": "",
   });
   const [formVisible, setFormVisible] = useState(false);
+  const [imageSrcList, setImageSrcList] = useState([]);
 
   useEffect(() => {
     if (modalVisible) {
@@ -58,7 +59,6 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
     }
   }, [modalVisible]);
 
-  const [imageSrcList, setImageSrcList] = useState([]);
 
   // Generation progress
   const [progress, setProgress] = useState(0);
@@ -119,7 +119,7 @@ const GenerateModal = ({ modalVisible, setModalVisible, serverList, session, ses
         Authorization: getAuthHeader() // Encrypted by TLS
       },
     })
-      .then(res => {
+      .then(_ => {
         for (let i = 0; i < formData.numberImages; i++) {
           axios.get(`${getBackendURL()}/servers/${formData.sshServer}/generate/${timestamp}/image/${i}`, {
             signal: controller.current.signal,

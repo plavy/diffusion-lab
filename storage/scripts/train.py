@@ -33,12 +33,12 @@ def train(args):
     dav.upload_sync(local_path=args.training_dir, remote_path=args.training_dir)
 
     try:
-        crop_x = int(metadata.get('shape').split('x')[0])
-        crop_y = int(metadata.get('shape').split('x')[1])
+        shape_x = int(metadata.get('shape').split('x')[0])
+        shape_y = int(metadata.get('shape').split('x')[1])
         augmentations = [key for key, value in metadata.get('augmentations').items() if value]
 
         transform = transforms.Compose([
-            load_downsizing(metadata.get('downsizing')).construct(crop_x, crop_y),
+            load_downsizing(metadata.get('downsizing')).construct(shape_x, shape_y),
             transforms.ToTensor(),
         ] + [load_augmentation(id).construct() for id in augmentations])
 
@@ -46,7 +46,7 @@ def train(args):
         data_module = ImageDataModule(data_dir=os.path.join(args.dataset_dir, 'data'), batch_size=32, transform=transform, val_proportion=val_proportion)
 
         hyperparameters = metadata.get('hyperparameters')
-        model = load_model(metadata.get('model')).construct(hyperparameters, (crop_x, crop_y))
+        model = load_model(metadata.get('model')).construct(hyperparameters, (shape_x, shape_y))
         callbacks = load_model(metadata.get('model')).callbacks()
 
         print(torch.cuda.is_available())  # Should print True

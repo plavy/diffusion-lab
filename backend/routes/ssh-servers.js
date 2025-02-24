@@ -15,6 +15,7 @@ const metadataFile = 'metadata.json';
 const scriptsDir = 'diffusion-lab/scripts/';
 const datasetDir = 'diffusion-lab/datasets/';
 const sessionDir = 'diffusion-lab/sessions/';
+const previewDir = '/tmp/previews';
 const samplesDir = '/tmp/samples';
 
 // List SSH servers
@@ -233,6 +234,61 @@ router.delete('/:id/cache', async (req, res) => {
   } catch (error) {
     res.status(500).send(error.message || error);
     console.error('Error for /servers/:id/cache for', id, ':', error.message || error);
+  }
+});
+
+// Preview training samples
+router.post('/:id/preview/:name', async (req, res) => {
+  const id = req.params.id;
+  const baseName = req.params.name;
+  try {
+    const datasetId = ensureVariable("Dataset", req.body.dataset);
+
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+    const ssh = new SSH2Promise(sshConfig);
+
+    const cwd = `${previewDir}/${baseName}`
+    await ssh.exec(`mkdir -p ${cwd}`);
+
+    const scp = await SCPClient(sshConfig);
+    await scp.writeFile(`${cwd}/${metadataFile}`, JSON.stringify(req.body, null, 2));
+    scp.close();
+
+    const command = `source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/preview.py \
+        --dataset-dir ${datasetDir}${datasetId} \
+        --save-dir ${cwd} \
+        --metadata-file ${cwd}/${metadataFile} \
+        --number '4' \
+        `;
+    await ssh.exec(command);
+    ssh.close();
+
+    res.json({ code: 0 });
+  } catch (error) {
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/preview/:name for', id, ':', error.message || error);
+  }
+});
+
+// Get sample preview
+router.get('/:id/preview/:name/image/:number', async (req, res) => {
+  const id = req.params.id;
+  const baseName = req.params.name;
+  const number = req.params.number;
+
+  try {
+    const dav = DAVClient(req.auth.baseUrl, req.auth);
+    const sshConfig = toSSHConfig(JSON.parse(await dav.getFileContents(serverDir + id + '/' + metadataFile, { format: 'text' })));
+
+    const scp = await SCPClient(sshConfig);
+    const file = await scp.readFile(`${previewDir}/${baseName}/${number}.jpg`);
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.send(file);
+    scp.close();
+  } catch (error) {
+    res.status(500).send(error.message || error);
+    console.error('Error for /servers/:id/preview/:name/image/:number for', id, ':', error.message || error);
   }
 });
 
