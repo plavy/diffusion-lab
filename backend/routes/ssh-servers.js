@@ -229,6 +229,7 @@ router.delete('/:id/cache', async (req, res) => {
     // Remove directories
     await ssh.exec(`if [[ -d ${samplesDir} ]]; then rm -r ${samplesDir}; fi`);
     await ssh.exec(`if [[ -d ${sessionDir} ]]; then rm -r ${sessionDir}; fi`);
+    await ssh.exec(`if [[ -d ${sessionDir} ]]; then rm -r ${previewDir}; fi`);
     res.json({ code: 0 });
     ssh.close();
   } catch (error) {

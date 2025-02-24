@@ -151,9 +151,9 @@ const DatasetDashboard = () => {
     let images = []
     for (let i = 0; i < numberImagesShown; i++) {
       if (imageSrcs[i]) {
-        images.push(<CCol className="p-1" key={i}><CImage fluid src={imageSrcs[i]} /></CCol>)
+        images.push(<CCol className="text-center p-1" key={i}><CImage fluid src={imageSrcs[i]} /></CCol>)
       } else {
-        images.push(<CCol className="p-1" key={i}><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
+        images.push(<CCol className="text-center p-1" key={i}><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
       }
     }
     return images;

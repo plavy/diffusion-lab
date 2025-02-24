@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { findName, getAuthHeader, getBackendURL, getDateTime, getLocal, shapeList, storeLocal, valProportionList } from "../../utils";
 import { CAlert, CButton, CCol, CFormInput, CFormLabel, CFormSwitch, CImage, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle, CRow, CSpinner } from "@coreui/react";
 import { cilCheck, cilWarning } from "@coreui/icons";
@@ -24,6 +24,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     "sessionName": "",
     "sshServer": "",
   });
+  const controller = useRef(new AbortController());
   const [imageSrcs, setImageSrcs] = useState({});
   const numberPreviewImages = 4;
 
@@ -57,7 +58,9 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
       newFormData.dataset = dataset;
       newFormData.sessionName = `model-${getDateTime()}`;
       setFormData(newFormData);
+      setImageSrcs({});
     } else {
+      controller.current.abort();
       setWaitingRespone(false);
       setErrorMessage("");
       setCurrentPage(0);
@@ -82,6 +85,46 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
         </div>
     ) : null
   )
+
+  const getImagePreviews = () => {
+    setImageSrcs({});
+    if (serverStatus == 0) {
+      const timestamp = Date.now();
+      axios.post(`${getBackendURL()}/servers/${formData.sshServer}/preview/${timestamp}`, formData, {
+        // signal: controller.current.signal,
+        headers: {
+          Authorization: getAuthHeader() // Encrypted by TLS
+        }
+      })
+        .then(_ => {
+          for (let i = 0; i < numberPreviewImages; i++) {
+            axios.get(`${getBackendURL()}/servers/${formData.sshServer}/preview/${timestamp}/image/${i}`, {
+              // signal: controller.current.signal,
+              headers: {
+                Authorization: getAuthHeader() // Encrypted by TLS
+              },
+              responseType: 'blob', // Fetch as binary
+            })
+              .then(res => {
+                setImageSrcs(imageSrcs => ({ ...imageSrcs, [i]: URL.createObjectURL(res.data) }))
+              })
+              .catch(error => {
+                if (error.code != 'ERR_CANCELED') {
+                }
+              });
+
+          }
+        })
+        .catch((error) => {
+          if (error.code != 'ERR_CANCELED') {
+          }
+        }
+        );
+    }
+  }
+  useEffect(() => {
+    getImagePreviews();
+  }, [serverStatus]);
 
   const handleChange = (e) => {
     setFormData({
@@ -160,41 +203,14 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
         setServerStatusMessage(`${findName(serverList, formData.sshServer)} couldn't be synced`);
       });
     }
+    if (currentPage == 2) {
+      getImagePreviews();
+    }
     if (currentPage == pages.length - 2) {
       setFormData({
         ...formData,
         sessionName: `model-${getDateTime()}`
       });
-      const timestamp = Date.now();
-      axios.post(`${getBackendURL()}/servers/${formData.sshServer}/preview/${timestamp}`, formData, {
-        // signal: controller.current.signal,
-        headers: {
-          Authorization: getAuthHeader() // Encrypted by TLS
-        }
-      }).then(_ => {
-        for (let i = 0; i < numberPreviewImages; i++) {
-          axios.get(`${getBackendURL()}/servers/${formData.sshServer}/preview/${timestamp}/image/${i}`, {
-            // signal: controller.current.signal,
-            headers: {
-              Authorization: getAuthHeader() // Encrypted by TLS
-            },
-            responseType: 'blob', // Fetch as binary
-          })
-            .then(res => {
-              setImageSrcs(imageSrcs => ({ ...imageSrcs, [i]: URL.createObjectURL(res.data) }))
-            })
-            .catch(error => {
-              if (error.code != 'ERR_CANCELED') {
-              }
-            });
-
-        }
-      })
-        .catch((error) => {
-          if (error.code != 'ERR_CANCELED') {
-          }
-        }
-        );
     }
     if (currentPage < pages.length - 1) {
       setCurrentPage(currentPage + 1);
@@ -211,9 +227,9 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     let images = []
     for (let i = 0; i < numberPreviewImages; i++) {
       if (imageSrcs[i]) {
-        images.push(<CCol className="p-1" key={i}><CImage fluid src={imageSrcs[i]} /></CCol>)
+        images.push(<CCol className="text-center p-1" key={i}><CImage fluid src={imageSrcs[i]} /></CCol>)
       } else {
-        images.push(<CCol className="p-1" key={i}><ProgressPlaceholder progress={100} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
+        images.push(<CCol className="text-center p-1" key={i}><ProgressPlaceholder progress={80} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
       }
     }
     return images;
@@ -355,7 +371,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
               Object.entries(formData.hyperparameters).map(([key, value]) => (<span key={key}><br /> - {findName(modelList.find(model => model.id == formData.model)?.hyperparameters, key)}: {value}</span>))
             }
           </div>
-          <div>
+          <div className="w-100" style={{ maxWidth: '400px' }}>
             <CRow xs={{ cols: 4 }}>
               <ImagesPreview />
             </CRow>
