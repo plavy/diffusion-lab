@@ -267,7 +267,9 @@ router.post('/:id/train', async (req, res) => {
     
     tmux new-session -d -s ${sessionName} " \
     bash tmp.sh;
-    sleep 300";`;
+    sleep 300";
+    rm tmp.sh;
+    `;
     // qsub -N diffusion-lab -q gpu -l select=1:ngpus=1 -v https_proxy="http://10.150.1.1:3128" tmp.sh;
     const response2 = await ssh.exec(command);
     ssh.close();
