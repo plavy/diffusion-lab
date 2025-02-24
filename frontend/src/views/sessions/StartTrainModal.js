@@ -227,7 +227,7 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
     let images = []
     for (let i = 0; i < numberPreviewImages; i++) {
       if (imageSrcs[i]) {
-        images.push(<CCol className="text-center p-1" key={i}><CImage fluid src={imageSrcs[i]} /></CCol>)
+        images.push(<CCol className="text-center p-1" key={i}><CImage className="w-100" fluid src={imageSrcs[i]} /></CCol>)
       } else {
         images.push(<CCol className="text-center p-1" key={i}><ProgressPlaceholder progress={80} color_left="var(--cui-secondary)" color_right="var(--cui-body-bg)" /></CCol>)
       }
@@ -372,11 +372,6 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
             }
           </div>
           <div className="w-100" style={{ maxWidth: '400px' }}>
-            <CRow xs={{ cols: 4 }}>
-              <ImagesPreview />
-            </CRow>
-          </div>
-          <div className="w-100" style={{ maxWidth: '400px' }}>
             <CFormInput
               className="w-100"
               id="sessionName"
@@ -385,6 +380,12 @@ const StartTrainModal = ({ modalVisible, setModalVisible, serverList, downsizing
               value={formData["sessionName"]}
               onChange={handleChange}
             />
+          </div>
+          <div className="w-100" style={{ maxWidth: '400px' }}>
+            <CFormLabel className="w-100 text-center">Preview of training samples</CFormLabel>
+            <CRow xs={{ cols: 4 }}>
+              <ImagesPreview />
+            </CRow>
           </div>
         </div>
       )
