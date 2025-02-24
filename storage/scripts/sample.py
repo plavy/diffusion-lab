@@ -22,7 +22,7 @@ def sample(args):
         with open(progress_file, 'w') as f:
             f.write(str(round((n - i) / n * 100)))
 
-    model_class = load_model(get_metadata('metadata.json').get('model')).get_class()
+    model_class = load_model(get_metadata(args.metadata_file).get('model')).get_class()
     model = model_class.load_from_checkpoint(checkpoint_path=trained_model_path)
     
     model.cuda()
@@ -36,6 +36,7 @@ def sample(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Sample images from model")
+    parser.add_argument("--metadata-file", required=True, help="Path to training definition file")
     parser.add_argument("--save-dir", required=True, help="Directory to save images")
     parser.add_argument("--base-name", required=True, help="Base name of images")
     parser.add_argument("--number", required=True, help="Number of images")

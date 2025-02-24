@@ -378,6 +378,7 @@ router.post('/:id/generate/:name', async (req, res) => {
     }
 
     const command = `cd ${cwd}; source ~/${scriptsDir}/venv/bin/activate; python3 ~/${scriptsDir}/sample.py \
+        --metadata-file ${metadataFile} \
         --save-dir ${samplesDir} \
         --base-name ${baseName} \
         --number '${req.body.numberImages}' \
